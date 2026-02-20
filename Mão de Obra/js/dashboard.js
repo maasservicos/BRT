@@ -21,7 +21,7 @@ const tabelaHist = document.getElementById('tabelaHistorico');
 // Variáveis Globais
 let dadosBrutos = [];
 let dadosResumidos = [];
-let mapaFuncionarios = {}; 
+let mapaFuncionariosBRT = {}; 
 let mapaHistoricoOS = {};
 let filtroKPIAtual = 'TODOS';
 
@@ -74,11 +74,11 @@ window.carregarDashboard = async function() {
         const os = inpOS ? inpOS.value : "";
 
         // 1. Busca Funcionários
-        const { data: funcs } = await client.from('Funcionarios').select('matricula, nome, valor_hora');
-        mapaFuncionarios = {};
+        const { data: funcs } = await client.from('FuncionariosBRT').select('matricula, nome, valor_hora');
+        mapaFuncionariosBRT = {};
         if(funcs) {
             funcs.forEach(f => {
-                mapaFuncionarios[f.matricula] = {
+                mapaFuncionariosBRT[f.matricula] = {
                     nome: f.nome,
                     valor: Number(f.valor_hora) || 0 
                 };
@@ -86,7 +86,7 @@ window.carregarDashboard = async function() {
         }
 
         // 2. Busca Histórico
-        let query = client.from('SistemaOS')
+        let query = client.from('ApontamentosBRT')
             .select('*')
             .gte('created_at', inicio + ' 00:00:00')
             .lte('created_at', fim + ' 23:59:59')
@@ -160,7 +160,7 @@ function calcularMetricasMO(matricula, os) {
     }
 
     const horasDecimais = tempoTrabalhadoMs / (1000 * 60 * 60);
-    const valorHora = mapaFuncionarios[matricula]?.valor || 0;
+    const valorHora = mapaFuncionariosBRT[matricula]?.valor || 0;
 
     return {
         horasDecimais: horasDecimais,
@@ -229,7 +229,7 @@ function renderizarTabelaPrincipal() {
             const hora = dataObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
             const dataFmt = dataObj.toLocaleDateString('pt-BR');
             
-            const infoFunc = mapaFuncionarios[item.matricula] || { nome: "Desconhecido", valor: 0 };
+            const infoFunc = mapaFuncionariosBRT[item.matricula] || { nome: "Desconhecido", valor: 0 };
             const nomeFunc = infoFunc.nome;
 
             const metricas = calcularMetricasMO(item.matricula, item.os);
@@ -294,7 +294,7 @@ window.verHistorico = function(osAlvo) {
         dataObj.setHours(dataObj.getHours() - 3);
         const dh = `${dataObj.toLocaleDateString()} ${dataObj.toLocaleTimeString()}`;
         
-        const info = mapaFuncionarios[item.matricula] || { nome: item.matricula };
+        const info = mapaFuncionariosBRT[item.matricula] || { nome: item.matricula };
         
         let txtStatus = item.status_cod;
         let cor = "color:#4b5563;";
@@ -348,7 +348,7 @@ window.exportarExcelDashboard = async function() {
             const dataObj = new Date(item.created_at);
             dataObj.setHours(dataObj.getHours() - 3); // Fuso Brasil
             
-            const info = mapaFuncionarios[item.matricula] || { nome: "N/D" };
+            const info = mapaFuncionariosBRT[item.matricula] || { nome: "N/D" };
             
             // 2. O CÉREBRO: Chamamos a mesma função da tabela!
             // Isso garante que o Excel bata 100% com a tela.

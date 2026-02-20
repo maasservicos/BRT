@@ -1,0 +1,102 @@
+:root {
+    --bg-maas: #F2ECDE;
+    --header-maas: #183B48;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --success: #16a34a;
+    --border: #e5e7eb;
+    --text-main: #1f2937;
+    --text-muted: #64748b;
+    --font: 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background-color: var(--bg-maas); font-family: var(--font); color: var(--text-main); }
+
+/* Cabeçalho */
+.header-maas { color: var(--bg-maas); padding: 20px 24px; background-color: var(--header-maas); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.branding { display: flex; align-items: center; gap: 16px; }
+.logo { width: 5rem; height: 2.5rem; background-color: rgba(255,255,255,0.1); border-radius: 0.25rem; display: flex; align-items: center; justify-content: center; overflow: hidden; font-weight: bold; font-size: 1.25rem; }
+.logo-img { height: 100%; object-fit: cover; }
+.title { font-size: 22px; font-weight: 700; }
+.subtitle { opacity: 0.8; font-size: 14px; margin-top: 2px;}
+
+/* Layout Principal */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.layout { display: grid; grid-template-columns: auto; gap: 24px; }
+@media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
+
+/* Cartões (Paineis) */
+.card { margin-bottom: 16px; background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 24px; border: 1px solid var(--border); }
+.card h2 { margin: 0 0 4px 0; font-size: 18px; color: var(--header-maas); border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+.card p.help { margin: 4px 0 16px 0; color: var(--text-muted); font-size: 13px; }
+
+/* Grid de Formulário */
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-top: 12px;}
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(6, 1fr); } }
+@media (max-width: 600px) { .grid { grid-template-columns: repeat(12, 1fr); } .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; } }
+
+.col-2 { grid-column: span 2; } .col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; } 
+.col-6 { grid-column: span 6; } .col-8 { grid-column: span 8; } .col-12 { grid-column: span 12; }
+
+/* Campos de Entrada */
+label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.req::after { content: ' *'; color: #ef4444; font-weight: 700; }
+
+input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; outline: none; transition: 0.2s; font-size: 14px; font-family: var(--font);
+}
+textarea { min-height: 80px; resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+/* Campos Bloqueados (Automáticos) */
+.readonly-field { background-color: #f1f5f9 !important; color: #64748b; cursor: not-allowed; border-color: #e2e8f0 !important; }
+
+/* Elementos Visuais */
+.divider { height: 1px; background: var(--border); margin: 20px 0; border: none;}
+.inline { display: flex; gap: 8px; align-items: center; }
+
+/* Botões */
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+button { font-family: var(--font); font-size: 14px; border: 0; border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-primary { background: var(--header-maas); color: #fff; }
+.btn-primary:hover { background: #112a34; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #15803d; }
+.btn-secondary { background: #e2e8f0; color: #1e293b; }
+.btn-secondary:hover { background: #cbd5e1; }
+.btn-ghost { background: transparent; color: #1e293b; border: 1px solid #cbd5e1; }
+.btn-ghost:hover { background: #f8fafc; }
+.btn-small { padding: 8px 14px; font-size: 16px; background: var(--accent); color: white; border-radius: 6px; }
+
+/* Sumário */
+.summary { position: sticky; top: 24px; }
+.summary .row { display: flex; justify-content: space-between; margin: 12px 0; font-size: 14px; color: #475569;}
+.summary .total { font-weight: 800; font-size: 18px; color: var(--header-maas); border-top: 2px dashed var(--border); padding-top: 12px;}
+
+/* Badges (Etiquetas) */
+.badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;}
+.badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;}
+.badge-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;}
+
+.files-box { border: 1px dashed #cbd5e1; padding: 16px; border-radius: 8px; background: #f8fafc; }
+.file-input { width: 100%; padding: 8px 0; font-size: 13px; border: none; background: transparent; cursor: pointer; }
+.divider-sm { height: 1px; background: #e2e8f0; margin: 10px 0; border: none; }
+.hidden { display: none !important; }
+
+/*Tabela de SS Pendentes*/
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(3px); }
+.modal-content { background: var(--card); width: 90%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; }
+.modal-header { background: var(--header-maas); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.btn-close { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; transition: 0.2s; }
+.btn-close:hover { color: #ef4444; }
+.modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+
+/*Tabela Maas*/
+.table-maas { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.table-maas th { background: #f8fafc; padding: 12px; border-bottom: 2px solid #cbd5e1; color: #475569; }
+.table-maas td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+.table-maas tr:hover { background: #f1f5f9; }

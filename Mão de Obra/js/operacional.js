@@ -92,7 +92,7 @@ txtMatricula.addEventListener('blur', async function() {
     lblNome.className = "text-center text-maas-blue font-bold text-sm mt-2";
 
     // 2. Busca Último Status
-    const { data: historico } = await client.from('SistemaOS').select('*').eq('matricula', matriculaValor).order('created_at', { ascending: false }).limit(1);
+    const { data: historico } = await client.from('ApontamentosBRT').select('*').eq('matricula', matriculaValor).order('created_at', { ascending: false }).limit(1);
 
     if (historico && historico.length > 0) {
         const last = historico[0];
@@ -127,7 +127,7 @@ async function carregarLista() {
 
     if(!matricula) return;
 
-    let query = client.from('SistemaOS')
+    let query = client.from('ApontamentosBRT')
         .select('*')
         .eq('matricula', matricula)
         .order('created_at', {ascending:false})
@@ -260,7 +260,7 @@ async function executarSalvamento(codigoStatus) {
 
     console.log("📦 ENVIANDO PARA O SUPABASE:", dadosParaSalvar);
 
-    const { error } = await client.from('SistemaOS').insert([dadosParaSalvar]);
+    const { error } = await client.from('ApontamentosBRT').insert([dadosParaSalvar]);
     
     document.body.style.cursor = 'default';
 
@@ -282,7 +282,7 @@ async function executarSalvamento(codigoStatus) {
 // --- VERSÃO CORRIGIDA: PROTEÇÃO CONTRA FUSO HORÁRIO ---
 async function calcularHorasTrabalhadas(matricula, os) {
     const { data: historico } = await client
-        .from('SistemaOS')
+        .from('ApontamentosBRT')
         .select('created_at, status_cod')
         .eq('matricula', matricula)
         .eq('os', os)

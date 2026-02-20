@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MAAS Manutenção — Ordem de Serviço</title>
+    <link href="ordemdeservico.css" rel="stylesheet" />
+</head>
+<body>
+    <header class="header-maas">
+        <div class="branding">
+            <div class="logo">
+               <img class="logo-img" src="Imagens/logo.png.jpg" alt="Maas">
+            </div>
+            <div>
+                <div class="title">Gerenciamento — Ordem de Serviço</div>
+                <div class="subtitle">Abertura, Alteração e Fechamento</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="layout">
+            <main class="stack">
+                
+               <section class="card">
+                    <h2>1. Registro da O.S</h2>
+                    <p class="help">Dados de rastreabilidade e origem da ocorrência.</p>
+                    <div class="grid">
+                        
+                        <div class="col-3">
+                            <label class="req" for="txtNumOS">Nº da O.S (Busque ou Crie)</label>
+                            <div class="inline">
+                                <input id="txtNumOS" type="text" placeholder="Ex: 1542" maxlength="6" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                <button id="btnNovaOS" type="button" class="btn-small" title="Criar Nova O.S" style="background-color: var(--success);">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-3">
+                            <label for="txtNumSS">S.S de Origem (Opcional)</label>
+                            <div class="inline">
+                                <input id="txtNumSS" type="text" placeholder="Nenhuma" readonly class="readonly-field" />
+                                <button id="btnAbrirModalSS" type="button" class="btn-small" style="background-color: var(--header-maas);" title="Buscar S.S Pendentes">📋</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-3">
+                            <label class="req" for="txtDataAbertura">Data/Hora Abertura O.S</label>
+                            <input id="txtDataAbertura" type="datetime-local" required />
+                        </div>
+                        <div class="col-3">
+                            <label for="txtDataFechamento">Data/Hora Fechamento</label>
+                            <input id="txtDataFechamento" type="datetime-local" readonly class="readonly-field" />
+                        </div>
+                    </div>
+                </section>
+
+                        <div id="modalSS" class="modal-overlay hidden">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>S.S Pendentes (Aguardando O.S)</h3>
+                                    <button id="btnFecharModalSS" type="button" class="btn-close">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <table class="table-maas">
+                                        <thead>
+                                            <tr>
+                                                <th>Nº S.S</th>
+                                                <th>Prefixo</th>
+                                                <th>Defeito Relatado</th>
+                                                <th>Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabelaSS">
+                                            </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                <section class="card">
+                    <h2>2. Informações do Ativo (Veículo)</h2>
+                    <div class="grid">
+                        <div class="col-3">
+                            <label class="req" for="txtPrefixo">Prefixo</label>
+                            <input id="txtPrefixo" type="text" placeholder="Ex: 1020" required />
+                        </div>
+                        <div class="col-3">
+                            <label class="req" for="txtPlaca">Placa</label>
+                            <input id="txtPlaca" type="text" placeholder="ABC-1234" readonly class="readonly-field" />
+                        </div>
+                        <div class="col-3">
+                            <label for="txtModelo">Modelo</label>
+                            <input id="txtModelo" type="text" placeholder="Automático" readonly class="readonly-field" />
+                        </div>
+                        <div class="col-3">
+                            <label for="txtSituacao">Situação do Bem</label>
+                            <input id="txtSituacao" type="text" placeholder="Automático" readonly class="readonly-field" />
+                        </div>
+                        <div class="col-3">
+                            <label for="txtContrato">Contrato</label>
+                            <input id="txtContrato" type="text" placeholder="Automático" readonly class="readonly-field" />
+                        </div>
+                        <div class="col-6">
+                            <label for="txtCliente">Cliente</label>
+                            <input id="txtCliente" type="text" placeholder="Automático" readonly class="readonly-field" />
+                        </div>
+                        <div class="col-3">
+                            <label for="numKm">Km Atual</label>
+                            <input id="numKm" type="number" min="0" step="1" placeholder="150000" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>3. Diagnóstico e Classificação</h2>
+                    <div class="grid">
+                        <div class="col-8">
+                            <label class="req" for="txtDefeito">Defeito Relatado na S.S</label>
+                            <textarea id="txtDefeito" placeholder="Descreva os sintomas da falha..."></textarea>
+                        </div>
+                        <div class="col-4">
+                            <label class="req" for="cboTipoServico">Tipo de Manutenção</label>
+                            <select id="cboTipoServico">
+                                <option value="">Selecione...</option>
+                                <option value="corretiva">Corretiva</option>
+                                <option value="preventiva">Preventiva</option>
+                                <option value="preditiva">Preditiva</option>
+                                <option value="garantia">Garantia</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>4. Encaminhamento</h2>
+                    <p class="help">Preencha as informações de encaminhamento da ordem de serviço.</p>
+                    <div class="grid">
+                      <div class="col-3">
+                            <label for="txtNumEncaminhamento">Nº do Encaminhamento</label>
+                           <input id="txtNumEncaminhamento" type="text" value="Gerado ao Salvar" readonly class="readonly-field" />
+                        </div>
+                        </div>
+
+                          <div class="col-3">
+                            <label class="req" for="cboTipoServico">Tarefa</label>
+                            <select id="cboTipoServico">
+                                <option value="">Selecione...</option>
+                                <option value="corretiva">Corretiva</option>
+                                <option value="preventiva">Preventiva</option>
+                                <option value="preditiva">Preditiva</option>
+                                <option value="garantia">Garantia</option>
+                            </select>
+                          </div>
+
+                          <div class="col-3">
+                            <label for="txtCodEtapa">Etapa</label>
+                            <input id="txtCodEtapa" type="text" placeholder="T40001" />
+                        </div>
+
+                        <div class="col-3">
+                            <label for="cboOficinaExterna">Serviço Externo?</label>
+                            <select id="cboOficinaExterna" onchange="document.getElementById('divDanfe').classList.toggle('hidden', this.value === 'nao')">
+                                <option value="nao">Não</option>
+                                <option value="sim">Sim</option>
+                            </select>
+                        </div>
+
+                        <div class="col-3">
+                            <label for="txtCodFornecedor">Cód. Fornecedor</label>
+                            <input id="txtCodFornecedor" type="text" placeholder="8 Primeiros Num. CNPJ" />
+                        </div>
+                        
+                        <div class="col-3">
+                            <label for="txtDataEncaminhamento">Data/Hora do Envio</label>
+                            <input id="txtDataEncaminhamento" type="datetime-local" />
+                        </div>
+                        
+                        <hr class="divider"/>
+
+                         <div class="col-6">
+                            <label class="req" for="txtDefeitoEncaminhamento">Observações:</label>
+                            <textarea id="txtDefeitoEncaminhamento" placeholder="Adicione observações sobre o encaminhamento..."></textarea>
+                        </div>
+
+                        <div class="col-3">
+                            <div id="divDanfe" class="hidden">
+                                <label for="fileDanfe">Anexar DANFE (Nota Fiscal)</label>
+                                <input id="fileDanfe" type="file" accept=".pdf,.png,.jpg,.jpeg" class="file-input" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>5. Insumos (Peças, Serviços & Mão de Obra)</h2>
+                    <p class="help">Adicione os itens necessários para a execução desta O.S.</p>
+                    <div class="grid">
+                        <div class="col-3">
+                            <label for="txtCodPeca">Cód. Produto</label>
+                            <input id="txtCodPeca" type="text" placeholder="CH, CA ..." />
+                        </div>
+                        <div class="col-6">
+                            <label for="txtDescPeca">Descrição do Produto</label>
+                            <input id="txtDescPeca" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
+                        </div>
+                        <div class="col-3">
+                            <label for="numQtdPeca">Quantidade</label>
+                            <div class="inline">
+                                <input id="numQtdPeca" type="number" placeholder="0" style="width: 100%;" />
+                                <button type="button" class="btn-small" title="Adicionar Peça">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="divider"/>
+                    <div class="grid">
+                        <div class="col-3">
+                            <label for="txtMatriculaProd">Cód. Serviço</label>
+                            <input id="txtMatriculaProd" type="text" placeholder="SV..." />
+                        </div>
+                        <div class="col-6">
+                            <label for="txtNomeProd">Descrição do Serviço</label>
+                            <input id="txtNomeProd" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
+                        </div>
+                        <div class="col-3">
+                            <label for="numQtdServico">Quantidade</label>
+                            <div class="inline">
+                                <input id="numQtdServico" type="number" placeholder="0" style="width: 100%;" />
+                                <button type="button" class="btn-small" title="Adicionar Serviço">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="divider"/>
+                    <div class="grid">
+                        <div class="col-3">
+                            <label for="txtMatriculaProd">Matrícula (Técnico)</label>
+                            <input id="txtMatriculaProd" type="text" placeholder="000000" />
+                        </div>
+                        <div class="col-6">
+                            <label for="txtNomeProd">Nome do Produtivo</label>
+                            <input id="txtNomeProd" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
+                        </div>
+                        <div class="col-3">
+                            <label for="numHorasPrevistas">Horas Previstas</label>
+                            <div class="inline">
+                                <input id="numHorasPrevistas" type="number" step="0.5" placeholder="0.0" style="width: 100%;" />
+                                <button type="button" class="btn-small" title="Adicionar Técnico">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>6. Orçamentos e Documentos</h2>
+                    <p class="help">Anexe no mínimo três orçamentos (obrigatório para serviços/compras externas).</p>
+                    <div class="grid">
+                        <div class="col-6">
+                            <div class="files-box">
+                                <label class="req">Anexos de Orçamentos (Mínimo 3)</label>
+                                <input id="fileOrc1" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
+                                <hr class="divider-sm"/>
+                                <input id="fileOrc2" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
+                                <hr class="divider-sm"/>
+                                <input id="fileOrc3" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
+                                <hr class="divider-sm"/>
+                                <label>Anexos Extras / Manuais</label>
+                                <input id="fileOrcExtra" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="req" for="cboMenorPreco">Foi escolhido o menor preço?</label>
+                            <select id="cboMenorPreco" onchange="document.getElementById('divJustificativa').classList.toggle('hidden', this.value === 'sim')">
+                                <option value="sim">Sim</option>
+                                <option value="nao">Não</option>
+                            </select>
+                            
+                            <div id="divJustificativa" class="hidden" style="margin-top: 16px;">
+                                <label class="req" for="txtJustificativa">Justificativa Técnica/Operacional</label>
+                                <textarea id="txtJustificativa" placeholder="Explique por que o menor preço não foi escolhido para fins de auditoria..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                
+
+                <section class="card" style="background-color: #f8fafc;">
+                    <div class="actions">
+                        <button id="btnSalvarOS" type="button" class="btn-primary">💾 Salvar O.S</button>
+                        <button id="btnFinalizarOS" type="button" class="btn-success">✅ Finalizar O.S</button>
+                        <button id="btnImprimirOS" type="button" class="btn-ghost" onclick="window.print()">🖨️ Imprimir</button>
+                        <button type="reset" class="btn-secondary" onclick="window.location.reload()">Limpar Tela</button>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="card summary">
+                <h2>Resumo da O.S</h2>
+                <div class="row"><span>Status</span><span id="lblStatus" class="badge badge-gray">NOVA</span></div>
+                <div class="row"><span>Nº O.S</span><span id="lblResumoOS" class="badge badge-blue">—</span></div>
+                <div class="row"><span>Prefixo</span><span id="lblResumoPrefixo" class="badge badge-blue">—</span></div>
+                <hr class="divider"/>
+                <div class="row"><span>Custo M.O. Previsto</span><span id="lblCustoMO">R$ 0,00</span></div>
+                <div class="row"><span>Custo Peças Previsto</span><span id="lblCustoPecas">R$ 0,00</span></div>
+                <div class="row total" style="margin-top: 15px;"><span>Total Estimado</span><span id="lblCustoTotal">R$ 0,00</span></div>
+            </aside>
+        </div>
+    </div>
+</body>
+</html>
