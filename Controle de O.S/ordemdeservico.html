@@ -7,10 +7,11 @@
     <link href="ordemdeservico.css" rel="stylesheet" />
 </head>
 <body>
+    
     <header class="header-maas">
         <div class="branding">
             <div class="logo">
-               <img class="logo-img" src="Imagens/logo.png.jpg" alt="Maas">
+                <img class="logo-img" src="Imagens/4.png" alt="Maas Logo">
             </div>
             <div>
                 <div class="title">Gerenciamento — Ordem de Serviço</div>
@@ -21,21 +22,25 @@
 
     <div class="container">
         <div class="layout">
+            
             <main class="stack">
                 
-               <section class="card">
+                <section class="card">
                     <h2>1. Registro da O.S</h2>
                     <p class="help">Dados de rastreabilidade e origem da ocorrência.</p>
+                    
                     <div class="grid">
-                        
                         <div class="col-3">
-                            <label class="req" for="txtNumOS">Nº da O.S (Busque ou Crie)</label>
+                            <label>Status Atual</label>
+                            <span id="badgeStatusTopo" class="badge badge-gray">NOVA</span>
+                        </div>                        
+                        <div class="col-3">
+                            <label class="req" for="txtNumOS">Nº da O.S</label>
                             <div class="inline">
-                                <input id="txtNumOS" type="text" placeholder="Ex: 1542" maxlength="6" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                <input id="txtNumOS" type="text" placeholder="Crie + ou Pesquise" required/>
                                 <button id="btnNovaOS" type="button" class="btn-small" title="Criar Nova O.S" style="background-color: var(--success);">+</button>
                             </div>
                         </div>
-                        
                         <div class="col-3">
                             <label for="txtNumSS">S.S de Origem (Opcional)</label>
                             <div class="inline">
@@ -43,40 +48,17 @@
                                 <button id="btnAbrirModalSS" type="button" class="btn-small" style="background-color: var(--header-maas);" title="Buscar S.S Pendentes">📋</button>
                             </div>
                         </div>
-                        
                         <div class="col-3">
-                            <label class="req" for="txtDataAbertura">Data/Hora Abertura O.S</label>
-                            <input id="txtDataAbertura" type="datetime-local" required />
+                            <label>Data de Abertura</label>
+                            <input type="text" id="txtDataAbertura" class="form-control readonly-field" readonly>
                         </div>
                         <div class="col-3">
                             <label for="txtDataFechamento">Data/Hora Fechamento</label>
-                            <input id="txtDataFechamento" type="datetime-local" readonly class="readonly-field" />
+                            <input id="txtDataFechamento" type="text" class="readonly-field" readonly />
                         </div>
                     </div>
                 </section>
 
-                        <div id="modalSS" class="modal-overlay hidden">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h3>S.S Pendentes (Aguardando O.S)</h3>
-                                    <button id="btnFecharModalSS" type="button" class="btn-close">&times;</button>
-                                </div>
-                                <div class="modal-body">
-                                    <table class="table-maas">
-                                        <thead>
-                                            <tr>
-                                                <th>Nº S.S</th>
-                                                <th>Prefixo</th>
-                                                <th>Defeito Relatado</th>
-                                                <th>Ação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tabelaSS">
-                                            </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
                 <section class="card">
                     <h2>2. Informações do Ativo (Veículo)</h2>
                     <div class="grid">
@@ -84,9 +66,13 @@
                             <label class="req" for="txtPrefixo">Prefixo</label>
                             <input id="txtPrefixo" type="text" placeholder="Ex: 1020" required />
                         </div>
+                         <div class="col-3">
+                            <label for="txtPlaca">Placa</label>
+                            <input id="txtPlaca" type="text" placeholder="Automático" readonly class="readonly-field" />
+                        </div>
                         <div class="col-3">
-                            <label class="req" for="txtPlaca">Placa</label>
-                            <input id="txtPlaca" type="text" placeholder="ABC-1234" readonly class="readonly-field" />
+                            <label for="txtOnibusTipo">Tipo de Ônibus</label>
+                            <input id="txtOnibusTipo" type="text" placeholder="Automático" readonly class="readonly-field" />
                         </div>
                         <div class="col-3">
                             <label for="txtModelo">Modelo</label>
@@ -106,7 +92,7 @@
                         </div>
                         <div class="col-3">
                             <label for="numKm">Km Atual</label>
-                            <input id="numKm" type="number" min="0" step="1" placeholder="150000" />
+                            <input id="numKm" type="number" min="0" step="1" placeholder="Ex: 150000" />
                         </div>
                     </div>
                 </section>
@@ -131,125 +117,147 @@
                     </div>
                 </section>
 
-                <section class="card">
-                    <h2>4. Encaminhamento</h2>
-                    <p class="help">Preencha as informações de encaminhamento da ordem de serviço.</p>
-                    <div class="grid">
-                      <div class="col-3">
-                            <label for="txtNumEncaminhamento">Nº do Encaminhamento</label>
-                           <input id="txtNumEncaminhamento" type="text" value="Gerado ao Salvar" readonly class="readonly-field" />
+                <section class="card" id="secEncaminhamento">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2>4. Encaminhamento</h2>
+                        <div class="actions">
+                            <button type="button" id="btnNovoEncaminhamento" class="btn-small btn-outline-dark">+ Novo Encaminhamento</button>
+                            <button type="button" id="btnSalvarEncaminhamento" class="btn-small btn-success">💾 Salvar Encaminhamento</button>
                         </div>
-                        </div>
+                    </div>
+                    <p class="help">Gere ou selecione um encaminhamento para adicionar insumos específicos.</p>
 
-                          <div class="col-3">
-                            <label class="req" for="cboTipoServico">Tarefa</label>
-                            <select id="cboTipoServico">
+                    <div class="table-wrapper">
+                        <table class="table-maas table-historico">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Nº Enc.</th>
+                                    <th style="width: 120px;">Tarefa</th>
+                                    <th>Etapa</th>
+                                    <th style="width: 60px; text-align: center;">Ações</th> 
+                                </tr>
+                            </thead>
+                            <tbody id="corpoHistoricoEnc">
+                                <tr><td colspan="4" class="text-center text-muted">Pesquise uma O.S para ver o histórico</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="grid mt-20">
+                        <div class="col-3">
+                            <label for="txtNumEncaminhamento">Nº do Enc. Ativo</label>
+                            <input id="txtNumEncaminhamento" type="text" value="Nenhum Selecionado" readonly class="readonly-field fw-bold text-dark" />
+                        </div>
+                        <div class="col-3">
+                            <label class="req" for="cboTarefaEncaminhamento">Tarefa</label>
+                            <select id="cboTarefaEncaminhamento" disabled>
                                 <option value="">Selecione...</option>
-                                <option value="corretiva">Corretiva</option>
-                                <option value="preventiva">Preventiva</option>
-                                <option value="preditiva">Preditiva</option>
-                                <option value="garantia">Garantia</option>
+                                <option value="Corretiva">Corretiva</option>
+                                <option value="Preventiva">Preventiva</option>
+                                <option value="Sinistro">Sinistro</option>
+                                <option value="Socorro">Socorro</option>
+                                <option value="Implementacao">Implementação</option>
                             </select>
-                          </div>
-
-                          <div class="col-3">
-                            <label for="txtCodEtapa">Etapa</label>
-                            <input id="txtCodEtapa" type="text" placeholder="T40001" />
                         </div>
-
+                        <div class="col-3">
+                            <label for="txtCodEtapa">Etapa</label>
+                            <input id="txtCodEtapa" type="text" disabled placeholder="Ex: T40001" />
+                        </div>
+                        <div class="col-3">
+                            <label for="txtDescricaoEtapa">Descrição da Etapa</label>
+                            <input type="text" id="txtDescricaoEtapa" class="readonly-field" readonly>
+                        </div>
                         <div class="col-3">
                             <label for="cboOficinaExterna">Serviço Externo?</label>
-                            <select id="cboOficinaExterna" onchange="document.getElementById('divDanfe').classList.toggle('hidden', this.value === 'nao')">
+                            <select id="cboOficinaExterna" disabled onchange="document.getElementById('divDanfe').classList.toggle('hidden', this.value === 'nao')">
                                 <option value="nao">Não</option>
                                 <option value="sim">Sim</option>
                             </select>
                         </div>
-
                         <div class="col-3">
                             <label for="txtCodFornecedor">Cód. Fornecedor</label>
-                            <input id="txtCodFornecedor" type="text" placeholder="8 Primeiros Num. CNPJ" />
+                            <input id="txtCodFornecedor" type="text" disabled placeholder="CNPJ" />
                         </div>
-                        
                         <div class="col-3">
                             <label for="txtDataEncaminhamento">Data/Hora do Envio</label>
-                            <input id="txtDataEncaminhamento" type="datetime-local" />
+                            <input id="txtDataEncaminhamento" type="text" placeholder="Aguardando..." readonly disabled/>
                         </div>
-                        
-                        <hr class="divider"/>
-
-                         <div class="col-6">
-                            <label class="req" for="txtDefeitoEncaminhamento">Observações:</label>
-                            <textarea id="txtDefeitoEncaminhamento" placeholder="Adicione observações sobre o encaminhamento..."></textarea>
+                           <div class="col-3">
+                            <label for="txtDataConclusao">Data/Hora da Conclusão</label>
+                            <input id="txtDataConclusao" type="text" placeholder="Aguardando..." readonly disabled/>
                         </div>
-
-                        <div class="col-3">
-                            <div id="divDanfe" class="hidden">
-                                <label for="fileDanfe">Anexar DANFE (Nota Fiscal)</label>
-                                <input id="fileDanfe" type="file" accept=".pdf,.png,.jpg,.jpeg" class="file-input" />
-                            </div>
+                        <div class="col-6">
+                            <label class="req" for="txtDefeitoEncaminhamento">Observações do Encaminhamento:</label>
+                            <textarea id="txtDefeitoEncaminhamento" placeholder="Detalhes técnicos deste envio..." disabled></textarea>
                         </div>
                     </div>
                 </section>
 
                 <section class="card">
                     <h2>5. Insumos (Peças, Serviços & Mão de Obra)</h2>
-                    <p class="help">Adicione os itens necessários para a execução desta O.S.</p>
-                    <div class="grid">
-                        <div class="col-3">
-                            <label for="txtCodPeca">Cód. Produto</label>
-                            <input id="txtCodPeca" type="text" placeholder="CH, CA ..." />
-                        </div>
-                        <div class="col-6">
-                            <label for="txtDescPeca">Descrição do Produto</label>
-                            <input id="txtDescPeca" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
-                        </div>
-                        <div class="col-3">
-                            <label for="numQtdPeca">Quantidade</label>
-                            <div class="inline">
-                                <input id="numQtdPeca" type="number" placeholder="0" style="width: 100%;" />
-                                <button type="button" class="btn-small" title="Adicionar Peça">+</button>
+                    <p class="help">Selecione o tipo de insumo para abrir a consulta padrão ou digite o código.</p>
+
+                    <div class="actions insumo-categories">
+                        <button type="button" class="btn-ghost" onclick="configurarTipo('PRODUTO')">📦 Peças</button>
+                        <button type="button" class="btn-ghost" onclick="configurarTipo('SERVICO')">🛠️ Serviços</button>
+                        <button type="button" class="btn-ghost" onclick="configurarTipo('TECNICO')">👤 Mão de Obra</button>
+                    </div>
+
+                    <div class="grid insumo-form">
+                        <div class="col-2">
+                            <label id="lblTipoInsumo">Cód. Item</label>
+                            <div style="display: flex; gap: 2px;">
+                                <input type="text" id="txtCodInsumo" placeholder="Código">
+                                <button type="button" id="btnLupaInsumo" class="btn-ghost btn-icon">🔍</button>
                             </div>
+                        </div>
+                        <div class="col-4">
+                            <label>Descrição</label>
+                            <input id="txtDescInsumo" type="text" placeholder="Descrição automática..." readonly class="readonly-field" />
+                        </div>
+                        <div class="col-2">
+                            <label id="lblQtdOuHora">Quantidade</label>
+                            <input id="numQtdInsumoLinha" type="text" value="1" min="0.1" step="0.1" />
+                        </div>
+                        <div class="col-2">
+                            <label>Valor / Custo</label>
+                            <input id="numValorInsumo" type="number" step="0.01" placeholder="0,00" />
+                        </div>
+                        <div class="col-2" style="display: flex; align-items: flex-end;">
+                            <button type="button" id="btnAdicionarInsumo" class="btn-primary w-100">Adicionar (+)</button>
                         </div>
                     </div>
-                    <hr class="divider"/>
+
                     <div class="grid">
-                        <div class="col-3">
-                            <label for="txtMatriculaProd">Cód. Serviço</label>
-                            <input id="txtMatriculaProd" type="text" placeholder="SV..." />
-                        </div>
-                        <div class="col-6">
-                            <label for="txtNomeProd">Descrição do Serviço</label>
-                            <input id="txtNomeProd" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
-                        </div>
-                        <div class="col-3">
-                            <label for="numQtdServico">Quantidade</label>
-                            <div class="inline">
-                                <input id="numQtdServico" type="number" placeholder="0" style="width: 100%;" />
-                                <button type="button" class="btn-small" title="Adicionar Serviço">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="divider"/>
-                    <div class="grid">
-                        <div class="col-3">
-                            <label for="txtMatriculaProd">Matrícula (Técnico)</label>
-                            <input id="txtMatriculaProd" type="text" placeholder="000000" />
-                        </div>
-                        <div class="col-6">
-                            <label for="txtNomeProd">Nome do Produtivo</label>
-                            <input id="txtNomeProd" type="text" placeholder="Automático ao digitar o código..." readonly class="readonly-field"/>
-                        </div>
-                        <div class="col-3">
-                            <label for="numHorasPrevistas">Horas Previstas</label>
-                            <div class="inline">
-                                <input id="numHorasPrevistas" type="number" step="0.5" placeholder="0.0" style="width: 100%;" />
-                                <button type="button" class="btn-small" title="Adicionar Técnico">+</button>
-                            </div>
+                        <div class="col-12">
+                            <table class="table-maas table-insumos mt-15">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Cód</th>
+                                        <th>Descrição</th>
+                                        <th>Qtd/Hrs</th>
+                                        <th>Vl. Unit</th>
+                                        <th>Total</th>
+                                        <th style="width: 50px;">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listaItensOS">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted p-20">
+                                            Nenhum insumo adicionado ao rascunho.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p id="msgRascunho" class="msg-warning hidden">
+                                ⚠️ Itens em destaque amarelo ainda não foram salvos no banco de dados.
+                            </p>
                         </div>
                     </div>
                 </section>
 
-                <section class="card">
+                <!--<section class="card">
                     <h2>6. Orçamentos e Documentos</h2>
                     <p class="help">Anexe no mínimo três orçamentos (obrigatório para serviços/compras externas).</p>
                     <div class="grid">
@@ -273,17 +281,16 @@
                                 <option value="nao">Não</option>
                             </select>
                             
-                            <div id="divJustificativa" class="hidden" style="margin-top: 16px;">
+                            <div id="divJustificativa" class="hidden mt-15">
                                 <label class="req" for="txtJustificativa">Justificativa Técnica/Operacional</label>
                                 <textarea id="txtJustificativa" placeholder="Explique por que o menor preço não foi escolhido para fins de auditoria..."></textarea>
                             </div>
                         </div>
-                    </div>
+                    </div>  
                 </section>
+            -->
 
-                
-
-                <section class="card" style="background-color: #f8fafc;">
+                <section class="card bg-light">
                     <div class="actions">
                         <button id="btnSalvarOS" type="button" class="btn-primary">💾 Salvar O.S</button>
                         <button id="btnFinalizarOS" type="button" class="btn-success">✅ Finalizar O.S</button>
@@ -301,9 +308,68 @@
                 <hr class="divider"/>
                 <div class="row"><span>Custo M.O. Previsto</span><span id="lblCustoMO">R$ 0,00</span></div>
                 <div class="row"><span>Custo Peças Previsto</span><span id="lblCustoPecas">R$ 0,00</span></div>
-                <div class="row total" style="margin-top: 15px;"><span>Total Estimado</span><span id="lblCustoTotal">R$ 0,00</span></div>
+                <div class="row total mt-15"><span>Total Estimado</span><span id="lblCustoTotal">R$ 0,00</span></div>
             </aside>
+            
         </div>
     </div>
+
+    <div id="modalSS" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>S.S Pendentes (Aguardando O.S)</h3>
+                <button id="btnFecharModalSS" type="button" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="table-maas">
+                    <thead>
+                        <tr>
+                            <th>Nº S.S</th>
+                            <th>Prefixo</th>
+                            <th>Defeito Relatado</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaSS">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalInsumos" class="modal-overlay hidden">
+        <div class="modal-content modal-lg">
+            <div class="modal-header modal-header-dark">
+                <h3>Consulta Padrão - Insumos</h3>
+                <button type="button" onclick="document.getElementById('modalInsumos').classList.add('hidden')" class="btn-close-dark">&times;</button>
+            </div>
+            <div class="modal-body bg-light-gray p-15">
+                <div class="search-bar">
+                    <label>Pesquisar:</label>
+                    <input type="text" id="txtBuscaInsumo" placeholder="Digite para pesquisar...">
+                </div>
+
+                <div class="table-scroll-container">
+                    <table class="table-maas table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBuscaInsumos">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" onclick="document.getElementById('modalInsumos').classList.add('hidden')" class="btn-ghost btn-outline-primary">Cancelar</button>
+                    <button type="button" id="btnConfirmarInsumoModal" class="btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="ordemdeservico.js"></script>
 </body>
 </html>
