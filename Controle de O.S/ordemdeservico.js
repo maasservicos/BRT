@@ -44,6 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modalInsumos').classList.remove('hidden');
         document.getElementById('txtBuscaInsumo').value = "";
         document.getElementById('txtBuscaInsumo').focus();
+
+        if (typeof window.carregarListaInsumosModal === "function") {
+        window.carregarListaInsumosModal(""); 
+    }
     });
 
     document.getElementById('btnAbrirModalSS')?.addEventListener('click', () => {
@@ -204,11 +208,31 @@ document.getElementById('txtPrefixo')?.addEventListener('blur', async function()
    4. SEÇÕES 3 E 4: DIAGNÓSTICO E ENCAMINHAMENTOS
    ========================================================================== */
 function liberarCamposEncaminhamento(status) {
-    const seletores = ['#cboTarefaEncaminhamento', '#txtCodEtapa', '#cboOficinaExterna', '#txtCodFornecedor', '#txtDataEncaminhamento', '#txtDefeitoEncaminhamento', '#txtCodInsumo', '#numQtdInsumoLinha', '#numValorInsumo', '#btnAdicionarInsumo'];
+    // 1. Removi o '#txtCodFornecedor' desta lista geral
+    const seletores = [
+        '#cboTarefaEncaminhamento', '#txtCodEtapa', '#cboOficinaExterna', 
+        '#txtDataEncaminhamento', '#txtDefeitoEncaminhamento', '#txtCodInsumo', 
+        '#numQtdInsumoLinha', '#numValorInsumo', '#btnAdicionarInsumo'
+    ];
+    
     seletores.forEach(seletor => {
         const el = document.querySelector(seletor);
         if (el) el.disabled = !status;
     });
+
+    // 2. Regra Exclusiva para o Fornecedor (CNPJ)
+    const campoFornecedor = document.getElementById('txtCodFornecedor');
+    const cboExterna = document.getElementById('cboOficinaExterna');
+    
+    if (campoFornecedor && cboExterna) {
+        if (!status) {
+            // Se estiver bloqueando a tela inteira, bloqueia ele também
+            campoFornecedor.disabled = true;
+        } else {
+            // Se estiver liberando a tela, SÓ libera o Fornecedor se estiver "Sim"
+            campoFornecedor.disabled = (cboExterna.value !== 'sim');
+        }
+    }
 }
 
 document.getElementById('btnNovoEncaminhamento')?.addEventListener('click', function() {
@@ -225,6 +249,20 @@ document.getElementById('btnNovoEncaminhamento')?.addEventListener('click', func
     
     liberarCamposEncaminhamento(true);
     atualizarDataVisual();
+});
+
+// Gatilho: Bloqueia/Libera CNPJ conforme o tipo de serviço
+document.getElementById('cboOficinaExterna')?.addEventListener('change', function() {
+    const campoFornecedor = document.getElementById('txtCodFornecedor');
+    if (!campoFornecedor) return;
+
+    if (this.value === 'sim') {
+        campoFornecedor.disabled = false;
+        campoFornecedor.focus(); // Já joga o cursor para ele digitar
+    } else {
+        campoFornecedor.disabled = true;
+        campoFornecedor.value = ""; // Limpa o campo se ele desistir e marcar "Não"
+    }
 });
 
 // Busca descrição da Etapa ao sair do campo
@@ -298,8 +336,10 @@ window.editarEncaminhamento = async function(idEnc) {
         document.getElementById('cboTarefaEncaminhamento').value = enc.tarefa || "";
         document.getElementById('txtCodEtapa').value = enc.codigo_etapa || "";
         document.getElementById('cboOficinaExterna').value = enc.servico_externo ? "sim" : "nao";
+        document.getElementById('cboOficinaExterna').dispatchEvent(new Event('change')); 
         document.getElementById('txtCodFornecedor').value = enc.cod_fornecedor || "";
         document.getElementById('txtDefeitoEncaminhamento').value = enc.encaminhamento_descricao || "";
+
         
         const campoFechamentoEnc = document.getElementById('txtDataConclusao');
         if (campoFechamentoEnc) {
@@ -396,23 +436,36 @@ async function carregarHistoricoEncaminhamentos() {
 /* ==========================================================================
    5. SEÇÃO 5: INSUMOS (PEÇAS, SERVIÇOS E MÃO DE OBRA) E MODAL SS
    ========================================================================== */
-document.getElementById('txtBuscaInsumo')?.addEventListener('input', async function() {
-    const termo = this.value.toUpperCase();
-    if (termo.length < 2) return;
 
+window.carregarListaInsumosModal = async function(termo = "") {
     let config = { tabela: 'Apoio_Produtos', colCod: 'codigo', colDesc: 'descricao' };
     if (window.tipoBuscaAtual === "SERVICO") config = { tabela: 'Apoio_Servicos', colCod: 'codigo', colDesc: 'descricao' };
     if (window.tipoBuscaAtual === "TECNICO") config = { tabela: 'FuncionariosBRT', colCod: 'cod_matricula', colDesc: 'nome' };
 
     try {
-        const data = await dbService.execute(client.from(config.tabela).select().ilike(config.colDesc, `%${termo}%`).limit(15));
+        // 1. Prepara a consulta base com um limite maior para a listagem inicial (ex: 100)
+        let query = client.from(config.tabela).select('*').limit(100);
+        
+        // 2. De acordo com o tipo de busca, aplica o filtro de descrição 
+        if (termo) {
+            query = query.ilike(config.colDesc, `%${termo}%`);
+        }
+
+        const data = await dbService.execute(query);
         const tbody = document.getElementById('listaBuscaInsumos');
         tbody.innerHTML = "";
 
-        data?.forEach(item => {
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted p-15">Nenhum item encontrado.</td></tr>`;
+            return;
+        }
+
+        // 3. Renderiza a tabela
+        data.forEach(item => {
             const tr = document.createElement('tr');
             tr.style.cursor = "pointer";
             tr.innerHTML = `<td>${item[config.colCod]}</td><td>${item[config.colDesc]}</td>`;
+            
             tr.onclick = function() {
                 tbody.querySelectorAll('tr').forEach(r => r.style.background = "#fff");
                 this.style.background = "#d3e4f5";
@@ -423,6 +476,22 @@ document.getElementById('txtBuscaInsumo')?.addEventListener('input', async funct
     } catch (err) {
         console.error("Erro na busca de insumos:", err);
     }
+};
+
+document.getElementById('txtBuscaInsumo')?.addEventListener('input', function() {
+    const termo = this.value.toUpperCase().trim();
+    
+    // Se o usuário apagar o texto todo, recarrega a lista inicial completa
+    if (termo.length === 0) {
+        window.carregarListaInsumosModal("");
+        return;
+    }
+    
+    // Evita pesquisar com apenas 1 letra para não travar o banco
+    if (termo.length < 2) return;
+
+    // Dispara a busca com o termo digitado
+    window.carregarListaInsumosModal(termo);
 });
 
 document.getElementById('btnConfirmarInsumoModal')?.addEventListener('click', () => {
