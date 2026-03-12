@@ -24,7 +24,7 @@ html, body {
 
 body {
     margin: 0;
-    background-color: var(--bg-maas);
+    background-color: var(--header-maas);
     font-family: var(--font);
     color: var(--text-main);
 }

@@ -1,0 +1,153 @@
+:root {
+    --bg-maas: #F2ECDE;
+    --header-maas: #183B48;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --success: #16a34a;
+    --border: #e5e7eb;
+    --text-main: #1f2937;
+    --text-muted: #64748b;
+    --font: 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background-color: var(--header-maas);
+    font-family: var(--font);
+    color: var(--text-main);
+}
+
+/* Utilitários de Margem e Preenchimento */
+.mt-15 {
+    margin-top: 15px;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.p-15 {
+    padding: 15px;
+}
+
+.p-20 {
+    padding: 20px;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+/* Utilitários de Texto e Fundo */
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-dark {
+    color: var(--text-main);
+}
+
+.fw-bold {
+    font-weight: bold;
+}
+
+.bg-light {
+    background-color: #f8fafc;
+}
+
+.bg-light-gray {
+    background-color: #f4f4f4;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ========================================== */
+/* CABEÇALHO DO SISTEMA                       */
+/* ========================================== */
+.header-maas {
+    color: var(--bg-maas);
+    padding: 20px 24px;
+    background-color: var(--header-maas);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.branding {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo {
+    width: 5rem;
+    height: 2.5rem;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.logo-img {
+    height: 100%;
+    object-fit: cover;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.subtitle {
+    opacity: 0.8;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* ========================================== */
+/* ESTRUTURA E GRID GERAL                     */
+/* ========================================== */
+
+
+
+
+
+/* Cards Base */
+.card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.card h1 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: black;
+    border-bottom: 2px solid var(--bg-maas);
+    padding-bottom: 8px;
+}
+
+.card p.help {
+    margin: 4px 0 16px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MAAS Manutenção — Solicitação de Serviço</title>
+    <link href="controledeSS.css" rel="stylesheet" />
+</head>
+<body>
+        <header class="header-maas">
+            <div class="branding">
+                <div class="logo">
+                    <img class="logo-img" src="Imagens/4.png" alt="Maas Logo">
+                </div>
+                <div>
+                    <div class="title">Gerenciamento — Solitição de Serviço</div>
+                    <div class="subtitle">Abertura e Fechamento</div>
+                </div>
+            </div>
+        </header>
+        
+    <div class="container">
+        <main class="layout">
+            <section class="card">
+                <h1>1° Informações do Veículo</h1>
+                <div class="grid">
+                    <div class="col-3">
+                        <label class="req" for="txtNumSS">Solicitação de Serviço</label>
+                        <div class="InLine">
+                            <input id="txtNumSS" type="text" placeholder="N° Solicitação de Serviço"/>
+                            <button id="btnNovaSS" type="button" class="btn-sucess btn-small" title="Criar S.S">+</button>
+                        </div>
+                    </div>
+
+                     <div class="col-3 margin-top-15">
+                        <label class="req" for="txtPlacaSS" type="text">Placa</label>
+                        <div class="InLine">
+                            <input id="txtPlacaSS" type="text" placeholder="Ex: BRT0I12">
+                            <button id="btnBuscarPlacaSS" type="text" class="btn-primary btn-icon" style="background-color: #f97316; border-radius: 4px;"">🔍</button>
+                        </div>
+                    </div>
+               
+                    <div class="col-3">
+                       <label>Abertura da S.S</label>
+                       <input id="textAberturaSS" type="text" class="readonly-field" placeholder="dd/mm/aaaa hh:mm">
+                    </div>
+
+                    <div class="col-3">
+                        <label>Fechamento da S.S</label>
+                        <input id="txtFechamentoSS" type="text" class="readonly-field" placeholder="dd/mm/aaaa hh:mm">
+                    </div>
+                   
+                    <div class="col-3 mt-15">
+                        <label class="req" for="txtKMSS">Km do Veículo</label>
+                        <input id="txtKMSS" type="text" placeholder="Km atual"/>
+                    </div>
+
+                    <div class="col-3 mt-15">
+                        <label>Nome do Bem</label>
+                        <input id="txtNomeBemSS" type="text" class="readonly-field" placeholder="Nome do Bem"/>
+                    </div>
+
+                    <div class="col-3 mt-15">
+                        <label>Tipo de Ônibus</label>
+                        <input id="txtOnibusSS" type="text" class="readonly-field" placeholder="Tipo do Ônibus"/>
+                    </div>
+
+                    <div class="col-3 mt-15">
+                        <label>N° do Contrato</label>
+                        <input id="txtNumContratoSS" type="text" class="readonly-field" placeholder="N° do Contrato"/>
+                    </div>
+
+                    <div class="col-3 mt-15">
+                        <label>Nome do Contrato</label>
+                        <input id="txtNomeContratoSS" type="text" class="readonly-field" placeholder="Nome do Contrato"/>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h1>2° Descrição do Defeito Relatado e Tipo de Manutenção</h1>
+                <div class="grid">
+                    <div class="col-4">
+                        <label class="req" for="cboTipoManutencao">Tipo de Manutenção</label>
+                        <select id="cboTipoManutencaoSS">
+                            <option value="">Selecione</option>
+                            <option value="Corretiva">Corretiva</option>
+                            <option value="Preventiva">Preventiva</option>
+                            <option value="Preditiva">Preditiva</option>
+                            <option value="Garantia">Garantia</option>
+                        </select>
+                    </div>
+
+                    <div class="col-8">
+                        <label class="req" for="txtDescricaoSS">Defeito Relatado</label>
+                        <textarea id="txtDescricaoSS" placeholder="Descreva de forma clara o que está acontecendo com o veículo..." rows="4"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h1>3° Informações Adicionais</h1>
+                <div class="grid">
+                    <div class="col-6">
+                        <label>Sintoma Apresentado</label>
+                        <div class="inline" style="margin-bottom: 8px;">
+                            <input id="txtSintomaPrincipal" type="text" class="readonly-field" placeholder="Selecione um sintoma na lupa..." style="width: 80px;" />
+                            <button type="button" id="btnLupaSintoma" class="btn-primary btn-icon" style="background-color: #f97316;">🔍</button>
+                        </div>
+                        
+                        <div class="table-wrapper" style="max-height: 120px; overflow-y: auto; margin-bottom: 0;">
+                            <table class="table-maas">
+                                <tbody id="listaSintomasSelecionados">
+                                    <tr><td class="text-center text-muted" style="padding: 16px;">Nenhum sintoma adicionado.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-6" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 12px">
+                        <label class="btn-toggle-large" id="lblServicoRapido">
+                            <input type="checkbox" id="chkServicoRapido" style="width:20px; height:20px; cursor: pointer;">
+                            ⏱️ Serviço Rápido
+                        </label>
+
+                        <div class="col-6" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 12px">
+                        <label class="btn-toggle-large" id="lblClienteEsperando">
+                            <input type="checkbox" id="chkClienteEsperando" style="width:20px; height:20px; cursor: pointer;">
+                            👤 Cliente Esperando
+                        </label>
+                 
+                </div> 
+            </section>
+
+            </main>
+
+            <div id="modalSintomas" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header modal-header-dark">
+                <h3>Buscar Sintoma</h3>
+                <button type="button" id="btnFecharModalSintomas" class="btn-close-dark">&times;</button>
+            </div>
+            
+            <div class="modal-body bg-light-gray p-15">
+                <div class="search-bar" style="margin-bottom: 15px;">
+                    <input type="text" id="txtBuscaSintomaModal" placeholder="Digite o nome do sintoma..." style="width: 100%; padding: 8px;" />
+                </div>
+                
+                <div class="table-scroll-container" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table-maas table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Código</th>
+                                <th>Descrição do Sintoma</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBuscaSintomasModal">
+                            <tr><td colspan="2" class="text-center text-muted p-15">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="modal-footer" style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" id="btnCancelarSintomas" class="btn-ghost btn-outline-primary">Cancelar</button>
+                    <button type="button" id="btnConfirmarSintomaModal" class="btn-primary" style="background-color: #f97316; border: none;">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+        <script type="module" src="js/controledeSS.js"></script>
+</body>
+</html>
