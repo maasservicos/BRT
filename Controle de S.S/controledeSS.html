@@ -26,18 +26,25 @@
                 <div class="grid">
                     <div class="col-3">
                         <label class="req" for="txtNumSS">Solicitação de Serviço</label>
-                        <div class="InLine">
-                            <input id="txtNumSS" type="text" placeholder="N° Solicitação de Serviço"/>
-                            <button id="btnNovaSS" type="button" class="btn-sucess btn-small" title="Criar S.S">+</button>
+                        
+                        <div class="inline">
+                            <input id="txtNumSS" type="text" placeholder="Nº da S.S" />
+                            <button id="btnNovaSS" type="button" class="btn-success btn-small" title="Nova S.S">+</button>
                         </div>
                     </div>
 
-                     <div class="col-3 margin-top-15">
-                        <label class="req" for="txtPlacaSS" type="text">Placa</label>
-                        <div class="InLine">
-                            <input id="txtPlacaSS" type="text" placeholder="Ex: BRT0I12">
-                            <button id="btnBuscarPlacaSS" type="text" class="btn-primary btn-icon" style="background-color: #f97316; border-radius: 4px;"">🔍</button>
+                     <div class="col-3">
+                        <label class="req" for="txtPlacaSS" type="text" >Placa</label>
+
+                        <div class="inline">
+                            <input id="txtPlacaSS" type="text" placeholder="Ex: BRT0I12" >
+                            <button id="btnBuscarPlacaSS" type="button" class="btn-primary btn-icon">🔍</button>
                         </div>
+                    </div>
+
+                     <div class="col-3">
+                        <label class="req" for="txtKMSS">Km do Veículo</label>
+                        <input id="txtKMSS" type="text" placeholder="Km atual"/>
                     </div>
                
                     <div class="col-3">
@@ -46,31 +53,26 @@
                     </div>
 
                     <div class="col-3">
-                        <label>Fechamento da S.S</label>
+                        <label class="">Fechamento da S.S</label>
                         <input id="txtFechamentoSS" type="text" class="readonly-field" placeholder="dd/mm/aaaa hh:mm">
                     </div>
                    
-                    <div class="col-3 mt-15">
-                        <label class="req" for="txtKMSS">Km do Veículo</label>
-                        <input id="txtKMSS" type="text" placeholder="Km atual"/>
-                    </div>
-
-                    <div class="col-3 mt-15">
+                    <div class="col-3">
                         <label>Nome do Bem</label>
                         <input id="txtNomeBemSS" type="text" class="readonly-field" placeholder="Nome do Bem"/>
                     </div>
 
-                    <div class="col-3 mt-15">
+                    <div class="col-3">
                         <label>Tipo de Ônibus</label>
                         <input id="txtOnibusSS" type="text" class="readonly-field" placeholder="Tipo do Ônibus"/>
                     </div>
 
-                    <div class="col-3 mt-15">
+                    <div class="col-3">
                         <label>N° do Contrato</label>
                         <input id="txtNumContratoSS" type="text" class="readonly-field" placeholder="N° do Contrato"/>
                     </div>
 
-                    <div class="col-3 mt-15">
+                    <div class="col-3">
                         <label>Nome do Contrato</label>
                         <input id="txtNomeContratoSS" type="text" class="readonly-field" placeholder="Nome do Contrato"/>
                     </div>
@@ -99,13 +101,31 @@
             </section>
 
             <section class="card">
-                <h1>3° Informações Adicionais</h1>
+                <h1>3° Localização do Veículo</h1>
+                <div class="grid">
+                    <div class="col-4">
+                        <label class="req" for="cboLocalizao">Locais Constantes</label>
+                            <select id="cboTipoManutencaoSS">
+                                <option value="">Selecione</option>
+                                <option value="GaragemBRT">Garagem - BRT</option>
+                                <option value="GaragemMaas">Garagem - Maas</option>
+                            </select>
+                    </div>
+                    <div class="col-8">
+                        <label class="req" for="txtDescricaoSS">Localização do Veículo</label>
+                        <textarea id="txtDescricaoSS" placeholder="Descreva de forma clara onde se encontra o veículo..." rows="4"></textarea>
+                    </div>   
+                </div>
+            </section>
+
+            <section class="card">
+                <h1>4° Informações Adicionais</h1>
                 <div class="grid">
                     <div class="col-6">
                         <label>Sintoma Apresentado</label>
                         <div class="inline" style="margin-bottom: 8px;">
-                            <input id="txtSintomaPrincipal" type="text" class="readonly-field" placeholder="Selecione um sintoma na lupa..." style="width: 80px;" />
-                            <button type="button" id="btnLupaSintoma" class="btn-primary btn-icon" style="background-color: #f97316;">🔍</button>
+                            <input id="txtSintomaPrincipal" type="text" class="readonly-field" placeholder="Selecione um sintoma na lupa..." />
+                            <button type="button" id="btnLupaSintoma" class="btn-primary btn-icon">🔍</button>
                         </div>
                         
                         <div class="table-wrapper" style="max-height: 120px; overflow-y: auto; margin-bottom: 0;">
@@ -117,21 +137,30 @@
                         </div>
                     </div>
 
-                    <div class="col-6" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 12px">
-                        <label class="btn-toggle-large" id="lblServicoRapido">
-                            <input type="checkbox" id="chkServicoRapido" style="width:20px; height:20px; cursor: pointer;">
-                            ⏱️ Serviço Rápido
-                        </label>
-
-                        <div class="col-6" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 12px">
-                        <label class="btn-toggle-large" id="lblClienteEsperando">
-                            <input type="checkbox" id="chkClienteEsperando" style="width:20px; height:20px; cursor: pointer;">
-                            👤 Cliente Esperando
-                        </label>
-                 
-                </div> 
+                    <div class="col-6" >
+                                <label class="btn-toggle-large" id="lblDanoSevero">
+                                    <input type="checkbox" id="chkDanoSevero" style="width:20px; height:20px; cursor: pointer;">
+                                    🚨 Dano Severo
+                                </label>
+                                <label class="btn-toggle-large" id="lblServicoRapido">
+                                    <input type="checkbox" id="chkServicoRapido" style="width:20px; height:20px; cursor: pointer;">
+                                    ⏱️ Serviço Rápido
+                                </label>
+                                <label class="btn-toggle-large" id="lblClienteEsperando">
+                                    <input type="checkbox" id="chkClienteEsperando" style="width:20px; height:20px; cursor: pointer;">
+                                    👤 Cliente Esperando
+                                </label>
+                        </div>
+               </div> 
             </section>
-
+                <div class="actions-footer">
+                    <button id="btnSalvarSS" type="button" class="btn-gerar">
+                       ⚙️ Gerar S.S
+                    </button>
+                    <button id="btnFinalizarSS" type="button" class="btn-fechar-ss">
+                        📋 Finalizar S.S
+                    </button>
+                </div>
             </main>
 
             <div id="modalSintomas" class="modal-overlay hidden">
