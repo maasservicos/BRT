@@ -34,10 +34,10 @@
                     </div>
 
                      <div class="col-3">
-                        <label class="req" for="txtPlacaSS" type="text" >Placa</label>
+                        <label class="req" for="txtPlacaSS" type="text" >Prefixo</label>
 
                         <div class="inline">
-                            <input id="txtPlacaSS" type="text" placeholder="Ex: BRT0I12" >
+                            <input id="txtPlacaSS" type="text" placeholder="Ex: Prefixo" >
                             <button id="btnBuscarPlacaSS" type="button" class="btn-primary btn-icon">🔍</button>
                         </div>
                     </div>
@@ -63,8 +63,8 @@
                     </div>
 
                     <div class="col-3">
-                        <label>Tipo de Ônibus</label>
-                        <input id="txtOnibusSS" type="text" class="readonly-field" placeholder="Tipo do Ônibus"/>
+                        <label>Status</label>
+                        <input id="txtStatusSS" type="text" class="readonly-field" placeholder="Status do Veículo"/>
                     </div>
 
                     <div class="col-3">
@@ -105,7 +105,7 @@
                 <div class="grid">
                     <div class="col-4">
                         <label class="req" for="cboLocalizao">Locais Constantes</label>
-                            <select id="cboTipoManutencaoSS">
+                            <select id="cboLocaisSS">
                                 <option value="">Selecione</option>
                                 <option value="GaragemBRT">Garagem - BRT</option>
                                 <option value="GaragemMaas">Garagem - Maas</option>
@@ -114,7 +114,7 @@
                     </div>
                     <div class="col-8">
                         <label class="req" for="txtDescricaoSS">Localização do Veículo</label>
-                        <textarea id="txtDescricaoSS" placeholder="Descreva de forma clara onde se encontra o veículo..." rows="4"></textarea>
+                        <textarea id="txtDescricaoLocalizacaoSS" placeholder="Descreva de forma clara onde se encontra o veículo..." rows="4"></textarea>
                     </div>   
                 </div>
             </section>
@@ -155,7 +155,7 @@
                </div> 
             </section>
                 <div class="actions-footer">
-                    <button id="btnSalvarSS" type="button" class="btn-gerar">
+                    <button id="btnGravarSS" type="button" class="btn-gerar">
                        ⚙️ Gerar S.S
                     </button>
                     <button id="btnFinalizarSS" type="button" class="btn-fechar-ss">
@@ -216,7 +216,7 @@
                 <table class="table-maas">
                     <thead>
                         <tr>
-                            <th>Prefixo</th>
+                            <th style="margin-bottom: 1px;">Prefixo</th>
                             <th>Placa</th>
                             <th>Modelo</th>
                             <th>Ação</th>

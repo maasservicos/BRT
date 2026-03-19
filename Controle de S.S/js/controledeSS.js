@@ -22,7 +22,8 @@ let estadoSS = {
     veiculoId: null,          // Guarda o ID (UUID) que virá do banco de dados
     identificacaoBusca: '',   // Guarda a Placa ou Prefixo que o usuário digitou
     sintomas: [],             // Uma lista (Array) vazia para guardarmos os sintomas escolhidos
-    isDanoSevero: false       // Guarda se o botão de Dano Severo foi ativado
+    isDanoSevero: false,
+    editando: false       // Guarda se o botão de Dano Severo foi ativado
 };
 
 //2 - Funções do Formulário
@@ -33,15 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
     preencherDataAbertura();
     configurarEventosNumeroSS();
     configurarEventosBuscaVeiculo();
-
+    configurarEventosModalSintomas();
+    configurarEventosBotoesFinais();
 
     const txtPlacaSS = document.getElementById('txtPlacaSS');
     if (txtPlacaSS) {
         txtPlacaSS.focus();
     }
 });
-
-//3 - Funções de UI
 
 // 3. FUNÇÕES DE INTERFACE (UI)
 
@@ -76,6 +76,7 @@ function configurarEventosNumeroSS () {
 
             if (confirmar) {
                 limparFormularioSS();
+                estadoSS.editando = false; // Garante que volta a ser uma S.S. Nova
             }
         });
     }
@@ -86,14 +87,70 @@ function configurarEventosNumeroSS () {
                 const numeroDigitado = txtNumSS.value.trim();
 
                 if(numeroDigitado !== '') {
-                    console.log(`Pesquisando S.S n° &{numeroDigitado}...`);
-
-                alert(`Simulando busca da S.S ${numeroDigitado} no banco`);
+                    console.log(`Pesquisando S.S n° ${numeroDigitado}...`);
+                    
+                    // A MÁGICA ACONTECE AQUI: Chamamos a função que vai ao Supabase!
+                    buscarSSTrazerDados(numeroDigitado); 
+                    
                 } else {
                     alert(`Digite um número de S.S para Pesquisar!`);
                 }
             }
         });
+    }
+}
+
+// =====================================================================
+// ROTINA DE CARREGAMENTO DE S.S. PARA EDIÇÃO/FINALIZAÇÃO
+// =====================================================================
+async function buscarSSTrazerDados(numero) {
+    const txtNumSS = document.getElementById('txtNumSS');
+    txtNumSS.style.backgroundColor = '#fef08a'; // Pinta de amarelo para mostrar que está a carregar
+
+    try {
+        const { data, error } = await client
+            .from('Solicitacao_Servicos')
+            .select('*')
+            .eq('numero_ss', parseInt(numero, 10)); // Busca exata pelo número digitado
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const ss = data[0];
+            console.log("S.S. encontrada no banco!", ss);
+            
+            // 1. Liga o "Modo Edição" (Muito Importante!)
+            estadoSS.editando = true;
+
+            // 2. Preenche os campos de texto com os dados do banco
+            if (document.getElementById('txtKMSS')) document.getElementById('txtKMSS').value = ss.km_atual || '';
+            if (document.getElementById('txtSintomaPrincipal')) document.getElementById('txtSintomaPrincipal').value = ss.sintomas || '';
+            if (document.getElementById('txtDescricaoSS')) document.getElementById('txtDescricaoSS').value = ss.defeito_relatado || '';
+            if (document.getElementById('txtDescricaoLocalizacaoSS')) document.getElementById('txtDescricaoLocalizacaoSS').value = ss.localizacao_veiculo || '';
+            
+            // 3. Preenche os Selects
+            // (Assumi que o ID dos seus selects são estes, ajuste se forem diferentes no HTML)
+            const selectServico = document.getElementById('tipoManutencaoSS'); 
+            if (selectServico && ss.servico) selectServico.value = ss.servico;
+            
+            const selectLocal = document.getElementById('LocaisSS'); 
+            if (selectLocal && ss.locais_constantes) selectLocal.value = ss.locais_constantes;
+
+            // 4. A Cereja do Bolo: Traz os dados do veículo usando a função que já temos!
+            if (ss.identificacao_veiculo) {
+                buscarVeiculoDireto(ss.identificacao_veiculo);
+            }
+
+            alert(`✅ S.S. ${numero} carregada e pronta para ser editada/finalizada!`);
+        } else {
+            alert(`⚠️ S.S. número ${numero} não existe na base de dados.`);
+            txtNumSS.value = ''; // Limpa para ele tentar de novo
+        }
+    } catch (err) {
+        console.error("Erro na busca da S.S:", err);
+        alert("❌ Erro ao buscar S.S. na base de dados.");
+    } finally {
+        txtNumSS.style.backgroundColor = ''; // Remove o amarelo
     }
 }
 
@@ -104,6 +161,30 @@ function configurarEventosNumeroSS () {
 function configurarEventosBuscaVeiculo() {
     // Elementos da tela principal
     const btnBuscarPlacaSS = document.getElementById('btnBuscarPlacaSS');
+
+    const txtPlacaPrincipal = document.getElementById('txtPlacaSS'); 
+
+    if (txtPlacaPrincipal) {
+        // O evento 'blur' dispara exatamente quando o cursor sai do campo (ex: ao dar Tab)
+        txtPlacaPrincipal.addEventListener('blur', () => {
+            const termoDigitado = txtPlacaPrincipal.value.trim().replace('-', '');
+            
+            // Só faz a viagem ao Supabase se o mecânico realmente tiver digitado algo
+            if (termoDigitado.length > 0) {
+                // Como não sabemos se ele estava só a passar pelo campo, 
+                // vamos fazer uma busca "silenciosa" e rápida.
+                buscarVeiculoDireto(termoDigitado);
+            }
+        });
+
+        // Bónus de UX: Se ele der "Enter" no campo principal, forçamos a saída do campo (blur)
+        txtPlacaPrincipal.addEventListener('keypress', (evento) => {
+            if (evento.key === 'Enter') {
+                evento.preventDefault();
+                txtPlacaPrincipal.blur(); // Aciona automaticamente a lógica do blur acima!
+            }
+        });
+    }
     
     // Elementos do Modal
     const modalVeiculo = document.getElementById('modalBuscaVeiculo');
@@ -137,6 +218,52 @@ function configurarEventosBuscaVeiculo() {
             }
         });
     }
+}
+
+// =====================================================================
+// BUSCA DIRETA (VIA TAB / BLUR NO CAMPO PRINCIPAL)
+// =====================================================================
+
+async function buscarVeiculoDireto(termo) {
+    console.log(`A fazer busca rápida por: ${termo}`);
+    
+    // Podemos mudar a cor do campo rapidamente para indicar que está a carregar
+    const txtPlaca = document.getElementById('txtPlaca');
+
+    try {
+        const { data, error } = await client
+            .from('View_Frota_Completa') 
+            .select('*')
+            // Busca exata pelo prefixo ou placa (.eq significa "equal/igual")
+            .or(`prefixo.eq.${termo},placa.ilike.${termo}`)
+            .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const veiculo = data[0];
+            console.log("Veículo encontrado na via rápida!");
+            
+            // Reaproveitamos a função que já criámos! 
+            // Ela preenche os campos, bloqueia a edição e joga o cursor para o Defeito.
+            selecionarVeiculoDoModal(veiculo); 
+
+        } else {
+            // Se ele digitar um prefixo fantasma e der Tab, limpamos o erro e avisamos.
+            alert('⚠️ Veículo não encontrado. Verifique o Prefixo digitado ou use a Lupa para pesquisar na lista.');
+            txtPlaca.value = ''; // Limpa o erro
+            
+            // Desbloqueia caso tenha ficado bloqueado de uma tentativa anterior
+            txtPlaca.removeAttribute('readonly'); 
+            txtPlaca.classList.remove('readonly-field');
+            
+            // Espera uns milissegundos e devolve o cursor para ele corrigir
+            setTimeout(() => txtPlaca.focus(), 100); 
+        }
+
+    } catch (err) {
+        console.error("Erro na busca direta:", err);
+    } 
 }
 
 // ---------------------------------------------------------------------
@@ -173,7 +300,7 @@ let query = client.from('View_Frota_Completa').select('*').order('prefixo', { as
             tr.innerHTML = `
                 <td>${veiculo.prefixo || '-'}</td>
                 <td>${veiculo.placa || '-'}</td>
-                <td> ${veiculo.nome_bem || '-'} </td>
+                <td>${veiculo.nome_bem || '-'} </td>
                 <td>
                     <button class="btn-selecionar-veiculo" style="cursor: pointer; padding: 4px 8px; background: #22c55e; color: white; border: none; border-radius: 4px;">
                         Selecionar
@@ -206,16 +333,39 @@ function selecionarVeiculoDoModal(veiculo) {
 
     // 2. Preenche os campos da tela de trás (A tela principal)
     // Usamos a mesma função DRY que criamos antes!
-    preencherEBloquearCampo('txtPlacaSS', veiculo.placa || veiculo.prefixo);
+    preencherCampo('txtPlacaSS', veiculo.prefixo);
     preencherEBloquearCampo('txtNomeBemSS', veiculo.nome_bem);
-    preencherEBloquearCampo('txtTipoOnibusSS', veiculo.tipo);
-    preencherEBloquearCampo('txtKmAtual', veiculo.km_atual);
+    preencherEBloquearCampo('txtStatusSS', veiculo.status);
+    preencherEBloquearCampo('txtNumContratoSS', veiculo.contrato_cod);
+    preencherEBloquearCampo('txtNomeContratoSS', veiculo.contrato_desc);
 
     // 3. Fecha o modal
     document.getElementById('modalBuscaVeiculo').style.display = 'none';
 
     // 4. Pula o cursor para o defeito relatado
     document.getElementById('txtDefeito')?.focus();
+}
+
+function preencherEBloquearCampo(idElemento, valor) {
+    const campo = document.getElementById(idElemento);
+
+    if (campo) {
+        campo.value = valor || '';
+        campo.setAttribute('readonly', true);
+        campo.classList.add('readonly-field');
+    } else {
+        console.warn(`Atenção: O campo com ID '${idElemento}' não foi encontrado no HTML.` );
+    }
+}
+
+function preencherCampo(idElemento, valor) {
+    const campo = document.getElementById(idElemento);
+
+    if (campo) {
+        campo.value = valor || '';
+    } else {
+        console.warn(`Atenção: O campo com ID '${idElemento}' não foi encontrado no HTML.` );
+    }
 }
 
 /* Limpar Formulario quando for gerar uma nova S.S*/
@@ -291,5 +441,287 @@ async function gerarProximoNumeroSS() {
         txtNumSS.value = '';
         txtNumSS.setAttribute('readonly', true);
         txtNumSS.classList.add('readonly-field');
+    }
+}
+
+
+/// =====================================================================
+// MÓDULO: MODAL DE SINTOMAS EM TABELA COM BUSCA (CARTÃO 3)
+// =====================================================================
+
+function configurarEventosModalSintomas() {
+    // 1. Mapeamento de IDs exatos do seu novo HTML
+    const btnLupaSintoma = document.getElementById('btnLupaSintoma'); 
+    const modalSintomas = document.getElementById('modalSintomas');
+    const tbodySintomas = document.getElementById('listaBuscaSintomasModal');
+    const txtBuscaSintoma = document.getElementById('txtBuscaSintomaModal'); 
+    const txtSintomaPrincipal = document.getElementById('txtSintomaPrincipal'); 
+    
+    // Botões
+    const btnFechar = document.getElementById('btnFecharModalSintomas');
+    const btnCancelar = document.getElementById('btnCancelarSintomas');
+    const btnConfirmar = document.getElementById('btnConfirmarSintomaModal');
+    console.log("3. Encontrei o botão da lupa?", !!btnLupaSintoma);
+    console.log("4. Encontrei o modal?", !!modalSintomas);
+
+    if (!modalSintomas) {
+        console.warn("⚠️ ALERTA: Não achei o modal, abortando a função!");
+        return;
+    }
+
+    // -----------------------------------------------------------------
+    // ABRIR O MODAL E CARREGAR DADOS (LAZY LOADING)
+    // -----------------------------------------------------------------
+  if (btnLupaSintoma) {
+        btnLupaSintoma.addEventListener('click', () => {
+            console.log("5. CLICOU NA LUPA! A abrir o modal..."); // Radar 3
+            
+            modalSintomas.classList.remove('hidden');
+            
+            // CORREÇÃO: Usando o nome correto da variável
+            if (txtBuscaSintoma) {
+                txtBuscaSintoma.value = ''; 
+                txtBuscaSintoma.focus();
+            }
+            
+            if (tbodySintomas && tbodySintomas.innerHTML.includes('Carregando')) {
+                buscarSintomasNoSupabase();
+            } else {
+                filtrarTabela(''); 
+            }
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // FECHAR O MODAL
+    // -----------------------------------------------------------------
+    const fecharModal = () => modalSintomas.classList.add('hidden');
+    if (btnFechar) btnFechar.addEventListener('click', fecharModal);
+    if (btnCancelar) btnCancelar.addEventListener('click', fecharModal);
+
+    // -----------------------------------------------------------------
+    // FILTRO EM TEMPO REAL
+    // -----------------------------------------------------------------
+    if (txtBuscaSintoma) {
+        txtBuscaSintoma.addEventListener('input', (evento) => {
+            const termo = evento.target.value.toLowerCase().trim();
+            filtrarTabela(termo);
+        });
+    }
+
+    function filtrarTabela(termo) {
+        if (!tbodySintomas) return;
+        const linhas = tbodySintomas.querySelectorAll('tr');
+        linhas.forEach(tr => {
+            if (tr.querySelector('td[colspan]')) return; 
+            const textoLinha = tr.textContent.toLowerCase();
+            tr.style.display = textoLinha.includes(termo) ? '' : 'none';
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // CONFIRMAR SELEÇÃO E TRANSFERIR PARA A TELA
+    // -----------------------------------------------------------------
+    // CORREÇÃO: Validamos a nova variável do campo principal
+    if (btnConfirmar && txtSintomaPrincipal) { 
+        btnConfirmar.addEventListener('click', () => {
+            const linhasSelecionadas = tbodySintomas.querySelectorAll('.sintoma-selecionado');
+            let sintomasEscolhidos = [];
+
+            linhasSelecionadas.forEach(tr => {
+                sintomasEscolhidos.push(tr.dataset.descricao);
+                tr.classList.remove('sintoma-selecionado');
+                tr.style.backgroundColor = ''; 
+            });
+
+            if (sintomasEscolhidos.length > 0) {
+                const textoFinal = sintomasEscolhidos.join(', ');
+                
+                // CORREÇÃO: Injeta no campo correto
+                if (txtSintomaPrincipal.value.trim() !== '') {
+                    txtSintomaPrincipal.value += ', ' + textoFinal;
+                } else {
+                    txtSintomaPrincipal.value = textoFinal;
+                }
+            }
+
+            fecharModal();
+            // Joga o cursor de volta para o campo para o mecânico continuar
+            txtSintomaPrincipal.focus(); 
+        });
+    }
+}
+
+// =====================================================================
+// BUSCA NO SUPABASE E DESENHO DA TABELA DE SINTOMAS
+// =====================================================================
+async function buscarSintomasNoSupabase() {
+    const tbody = document.getElementById('listaBuscaSintomasModal');
+    
+    try {
+        // Vai ao banco buscar os sintomas e ordena por ordem alfabética
+        const { data, error } = await client
+            .from('sintomas') // Confirme se o nome da tabela no Supabase é este mesmo
+            .select('*')
+            .order('codigo', { ascending: true });
+
+        if (error) throw error;
+
+        tbody.innerHTML = ''; // Limpa a mensagem de "Carregando..."
+
+        // Se o banco estiver vazio...
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center p-15">Nenhum sintoma cadastrado.</td></tr>';
+            return;
+        }
+
+        // Desenha as linhas clicáveis com os dados do banco
+        data.forEach(sintoma => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer'; 
+            tr.dataset.descricao = sintoma.descricao; 
+
+            tr.innerHTML = `
+                <td style="width: 80px;" class="text-center">${sintoma.codigo || sintoma.id || '-'}</td>
+                <td>${sintoma.descricao}</td>
+            `;
+
+            // O GATILHO DE SELEÇÃO (Muda a cor da linha ao clicar)
+            tr.addEventListener('click', () => {
+                tr.classList.toggle('sintoma-selecionado');
+                
+                if (tr.classList.contains('sintoma-selecionado')) {
+                    tr.style.backgroundColor = '#fed7aa'; // Fica laranjinha
+                } else {
+                    tr.style.backgroundColor = ''; // Volta ao branco
+                }
+            });
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Erro ao buscar sintomas:", err);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger p-15">Erro ao carregar os dados.</td></tr>';
+        }
+    }
+}
+
+// =====================================================================
+// MÓDULO: SALVAR E FINALIZAR S.S. (GRAVAÇÃO NO BANCO)
+// =====================================================================
+
+function configurarEventosBotoesFinais() {
+    const btnGravarSS = document.getElementById('btnGravarSS');       // Ajuste o ID se necessário
+    const btnFinalizarSS = document.getElementById('btnFinalizarSS'); // Ajuste o ID se necessário
+
+    if (btnGravarSS) {
+        btnGravarSS.addEventListener('click', (e) => {
+            e.preventDefault();
+            processarSalvamento('ABERTA'); // Status Aberta
+        });
+    }
+
+    if (btnFinalizarSS) {
+        btnFinalizarSS.addEventListener('click', (e) => {
+            e.preventDefault();
+            processarSalvamento('FINALIZADA'); // Status Finalizada
+        });
+    }
+}
+
+async function processarSalvamento(statusSS) {
+    const elementoSS = document.getElementById('txtNumSS');
+    const elementoKM = document.getElementById('txtKMSS');
+    
+    // 1. Coleta de Dados da Tela
+    const numeroSS = document.getElementById('txtNumSS')?.value || '';
+    const prefixoOuPlaca = document.getElementById('txtPlacaSS')?.value || '';
+    const kmAtual = document.getElementById('txtKMSS')?.value || '';
+    const sintomaPrincipal = document.getElementById('txtSintomaPrincipal')?.value || '';
+    const defeitoRelatado = document.getElementById('txtDescricaoSS')?.value || '';
+    const localizacaoVeiculo = document.getElementById('txtDescricaoLocalizacaoSS')?.value || '';
+    const tipoServico = document.getElementById('cboTipoManutencaoSS')?.value;
+    const locaisConstantes = document.getElementById('cboLocaisSS')?.value;
+    const danoSevero = document.getElementById('chkDanoSevero')?. value || '';
+    const servicoRapido = document.getElementById('chkServicoRapido')?. value || '';
+    const clienteEsperando = document.getElementById('chkClienteEsperando')?. value || '';
+
+    // 2. Validação Inteligente
+    if (!prefixoOuPlaca) {
+        alert('⚠️ É obrigatório informar o Veículo (Prefixo/Placa) antes de salvar.');
+        return;
+    }
+
+    // Se for FINALIZAR, somos mais rigorosos!
+    if (statusSS === 'FINALIZADA') {
+        if (!sintomaPrincipal && !defeitoRelatado && !localizacaoVeiculo) {
+            alert('⚠️ Para FINALIZAR a S.S., você precisa informar o Sintoma, Defeito Relatado e Localização do Veículo.');
+            return;
+        }
+    }
+
+    // 3. Montagem do Pacote (Payload) para o Supabase
+    // ATENÇÃO: As chaves (esquerda) DEVEM ter o mesmo nome das colunas da sua tabela no banco
+    const pacoteSS = {
+        numero_ss: numeroSS,
+        identificacao_veiculo: prefixoOuPlaca,
+        km_atual: kmAtual ? parseInt(kmAtual) : null,
+        sintomas: sintomaPrincipal,
+        defeito_relatado: defeitoRelatado,
+        servico: tipoServico,
+        status: statusSS,
+        localizacao_veiculo: localizacaoVeiculo,
+        locais_constantes: locaisConstantes,
+        is_dano_severo: danoSevero,
+        is_servico_rapido: servicoRapido,
+        is_cliente_esperando: clienteEsperando,
+        data_abertura: new Date().toISOString() // Salva a data e hora exatas do clique
+        
+    };
+
+    // 4. Feedback Visual (UX)
+    const btnClicado = statusSS === 'FINALIZADA' ? document.getElementById('btnFinalizarSS') : document.getElementById('btnGravarSS');
+    const textoOriginal = btnClicado.innerText;
+    btnClicado.innerText = 'A gravar... ⏳';
+    btnClicado.disabled = true;
+
+   // 5. Envio para o Supabase (O DESVIO INTELIGENTE UPDATE vs INSERT)
+    try {
+        console.log("Pacote pronto para envio:", pacoteSS);
+
+        // Se pesquisámos a S.S. antes, a memória 'editando' estará verdadeira!
+        if (estadoSS.editando) {
+            console.log("A atualizar S.S. existente no banco...");
+            
+            const { error } = await client
+                .from('Solicitacao_Servicos')
+                .update(pacoteSS)
+                .eq('numero_ss', pacoteSS.numero_ss); // Encontra a linha pelo número da S.S.
+
+            if (error) throw error;
+        } 
+        // Se for falso, é uma S.S. Nova!
+        else {
+            console.log("A criar S.S. nova...");
+            const { error } = await client
+                .from('Solicitacao_Servicos')
+                .insert([pacoteSS]);
+
+            if (error) throw error;
+        }
+
+        // 6. Sucesso!
+        alert(`✅ S.S. ${statusSS} com sucesso!`);
+        window.location.reload(); 
+
+    } catch (err) {
+        console.error("Erro ao salvar S.S.:", err);
+        alert('❌ Ocorreu um erro ao comunicar com a base de dados. Tente novamente.');
+    } finally {
+        // Restaura o botão
+        btnClicado.innerText = textoOriginal;
+        btnClicado.disabled = false;
     }
 }

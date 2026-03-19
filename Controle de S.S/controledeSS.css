@@ -163,7 +163,7 @@ main {
 }
 
 .col-3 {
-    width: calc(25% - 15px);
+    width: calc(33% - 15px);
 }
 .col-4 {
     width: calc(33.333% - 13.33px);
@@ -410,14 +410,14 @@ button {
 
     /* 2. Ajusta os botões do rodapé para não ficarem esmagados */
     .actions-footer {
-        flex-direction: column; /* Coloca o botão laranja debaixo do verde */
+        flex-direction: column; 
         align-items: center;
         gap: 15px;
     }
 
     .btn-gerar, 
     .btn-fechar-ss {
-        width: 100%; /* Faz o botão esticar de ponta a ponta no telemóvel para ser fácil de clicar */
+        width: 100%; 
     }
 
     /* 3. Reduz o tamanho da fonte do título para não cortar no telemóvel */
@@ -516,4 +516,172 @@ button {
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1rem;
+}
+
+td {
+    padding-right: 20px;
+    padding-top: 2px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--header-maas);
+
+}
+
+
+
+/* ===================================================================== */
+/* MODAL DE SINTOMAS - ESTRUTURA E OVERLAY                               */
+/* ===================================================================== */
+
+/* O fundo escuro que bloqueia a tela de trás */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.65);
+    z-index: 9999;
+    
+    /* Centraliza a caixa branca na tela */
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+}
+
+/* A classe de controle (O interruptor de luz) */
+.modal-overlay.hidden {
+    display: none !important; 
+}
+
+/* A caixa principal do modal */
+.modal-content {
+    background-color: #ffffff;
+    width: 95%;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    overflow: hidden; /* Garante que o header escuro não vaze pelos cantos arredondados */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===================================================================== */
+/* CABEÇALHO ESCURO (DARK HEADER)                                        */
+/* ===================================================================== */
+
+.modal-header-dark {
+    background-color: var(--header-maas); /* Azul bem escuro/Grafite */
+    color: #ffffff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header-dark h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Botão de fechar (X) no tema escuro */
+.btn-close-dark {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.btn-close-dark:hover {
+    color: #ef4444; /* Fica vermelho ao passar o mouse */
+}
+
+/* ===================================================================== */
+/* CORPO E CLASSES UTILITÁRIAS                                           */
+/* ===================================================================== */
+
+.bg-light-gray { background-color: #f8fafc; }
+.p-15 { padding: 15px; }
+.text-center { text-align: center; }
+.text-muted { color: #64748b; }
+
+/* Barra de pesquisa */
+.search-bar input {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-bar input:focus {
+    border-color: #f97316; /* Laranja combinando com o botão de confirmar */
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+/* ===================================================================== */
+/* TABELA (TABLE-MAAS)                                                   */
+/* ===================================================================== */
+
+.table-maas {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+}
+
+.table-maas th, 
+.table-maas td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table-maas th {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky; /* Mantém o cabeçalho fixo ao rolar a lista */
+    top: 0;
+    z-index: 10;
+}
+
+/* Efeito de hover nas linhas */
+.table-hover tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* ===================================================================== */
+/* BOTÕES DO FOOTER                                                      */
+/* ===================================================================== */
+
+.modal-footer button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: #1174ff;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-ghost:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+
+.btn-primary {
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
+}
+
+.btn-primary:hover {
+    filter: brightness(0.9); /* Escurece o laranja levemente ao passar o mouse */
+    transform: translateY(-1px);
 }
