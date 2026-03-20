@@ -15,6 +15,18 @@ const dbService = {
         return data;
     }
 };
+// Função para Formatar Datas
+
+function formatarDataParaBR(dataIso) {
+    if (!dataIso) return ''; // Se não tiver data, devolve vazio
+    
+    const data = new Date(dataIso); // Transforma o texto do banco num objeto de Data
+    
+    const dataFormatada = data.toLocaleDateString('pt-BR');
+    const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    return `${dataFormatada} ${horaFormatada}`;
+}
 
 //1 - Início
 
@@ -36,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarEventosBuscaVeiculo();
     configurarEventosModalSintomas();
     configurarEventosBotoesFinais();
+
 
     const txtPlacaSS = document.getElementById('txtPlacaSS');
     if (txtPlacaSS) {
@@ -82,18 +95,31 @@ function configurarEventosNumeroSS () {
     }
 
     if(txtNumSS) {
+        // 1. O GATILHO DO TAB / CLICAR FORA (blur)
+        // Este é o verdadeiro "motor" de busca automático.
+        txtNumSS.addEventListener('blur', () => {
+            const numeroDigitado = txtNumSS.value.trim();
+
+            if(numeroDigitado !== '') {
+                console.log(`Pesquisando S.S n° ${numeroDigitado} via Tab/Saída...`);
+                buscarSSTrazerDados(numeroDigitado); 
+            }
+        });
+
+        // 2. O GATILHO DO ENTER (keypress)
         txtNumSS.addEventListener('keypress', (evento) => {
             if (evento.key === 'Enter') {
+                evento.preventDefault(); // Impede o formulário de fazer reload na página
+                
                 const numeroDigitado = txtNumSS.value.trim();
 
-                if(numeroDigitado !== '') {
-                    console.log(`Pesquisando S.S n° ${numeroDigitado}...`);
-                    
-                    // A MÁGICA ACONTECE AQUI: Chamamos a função que vai ao Supabase!
-                    buscarSSTrazerDados(numeroDigitado); 
-                    
-                } else {
+                if(numeroDigitado === '') {
+                    // Só avisa que está vazio se ele tentar forçar a busca com Enter
                     alert(`Digite um número de S.S para Pesquisar!`);
+                } else {
+                    // Se tem número, mandamos o JavaScript "tirar o cursor" do campo.
+                    // Isso aciona instantaneamente o evento 'blur' aí de cima!
+                    txtNumSS.blur(); 
                 }
             }
         });
@@ -111,7 +137,7 @@ async function buscarSSTrazerDados(numero) {
         const { data, error } = await client
             .from('Solicitacao_Servicos')
             .select('*')
-            .eq('numero_ss', parseInt(numero, 10)); // Busca exata pelo número digitado
+            .eq('numero_ss', parseInt(numero));
 
         if (error) throw error;
 
@@ -122,21 +148,39 @@ async function buscarSSTrazerDados(numero) {
             // 1. Liga o "Modo Edição" (Muito Importante!)
             estadoSS.editando = true;
 
+            //Trazer Datas
+            const campoAbertura = document.getElementById('txtAberturaSS');
+            if (campoAbertura) campoAbertura.value = formatarDataParaBR(ss.data_abertura);
+
+            const campoFechamento = document.getElementById('txtFechamentoSS');
+            if (campoFechamento) campoFechamento.value = formatarDataParaBR(ss.data_fechamento);
+
             // 2. Preenche os campos de texto com os dados do banco
+            if (document.getElementById('txtStatusSS')) document.getElementById('txtStatusSS').value = ss.status || ';'
             if (document.getElementById('txtKMSS')) document.getElementById('txtKMSS').value = ss.km_atual || '';
             if (document.getElementById('txtSintomaPrincipal')) document.getElementById('txtSintomaPrincipal').value = ss.sintomas || '';
             if (document.getElementById('txtDescricaoSS')) document.getElementById('txtDescricaoSS').value = ss.defeito_relatado || '';
             if (document.getElementById('txtDescricaoLocalizacaoSS')) document.getElementById('txtDescricaoLocalizacaoSS').value = ss.localizacao_veiculo || '';
-            
+          
             // 3. Preenche os Selects
-            // (Assumi que o ID dos seus selects são estes, ajuste se forem diferentes no HTML)
-            const selectServico = document.getElementById('tipoManutencaoSS'); 
+            const selectServico = document.getElementById('cboTipoManutencaoSS'); 
             if (selectServico && ss.servico) selectServico.value = ss.servico;
             
-            const selectLocal = document.getElementById('LocaisSS'); 
+            const selectLocal = document.getElementById('cboLocaisSS'); 
             if (selectLocal && ss.locais_constantes) selectLocal.value = ss.locais_constantes;
 
-            // 4. A Cereja do Bolo: Traz os dados do veículo usando a função que já temos!
+            // 3. Preenche os CheckBox
+
+            const chkDano = document.getElementById('chkDanoSevero');
+            if (chkDano) chkDano.checked = ss.is_dano_severo || false;
+
+            const chkCliente = document.getElementById('chkClienteEsperando');
+            if (chkCliente) chkCliente.checked = ss.is_cliente_esperando || false;
+            
+            const chkRapido = document.getElementById('chkServicoRapido');
+            if (chkRapido) chkRapido.checked = ss.is_servico_rapido || false;
+
+            // 4.Traz os dados do veículo
             if (ss.identificacao_veiculo) {
                 buscarVeiculoDireto(ss.identificacao_veiculo);
             }
@@ -385,6 +429,13 @@ function limparFormularioSS() {
     if (document.getElementById('txtTipoOnibus')) document.getElementById('txtTipoOnibus').value = '';
     if (document.getElementById('txtKmAtual')) document.getElementById('txtKmAtual').value = '';
     if (document.getElementById('txtDefeito')) document.getElementById('txtDefeito').value = '';
+
+    const campoStatus = document.getElementById('txtStatusSS');
+    if (campoStatus) {
+        campoStatus.style.color = '#3b82f6'; // 
+    }
+
+    if (document.getElementById('txtPlacaSS')) document.getElementById('txtPlacaSS').value = '';
     
     // 3. Atualiza a Data de Abertura para o segundo exato em que ele clicou em "Novo"
     preencherDataAbertura();
@@ -522,7 +573,7 @@ function configurarEventosModalSintomas() {
     // -----------------------------------------------------------------
     // CONFIRMAR SELEÇÃO E TRANSFERIR PARA A TELA
     // -----------------------------------------------------------------
-    // CORREÇÃO: Validamos a nova variável do campo principal
+
     if (btnConfirmar && txtSintomaPrincipal) { 
         btnConfirmar.addEventListener('click', () => {
             const linhasSelecionadas = tbodySintomas.querySelectorAll('.sintoma-selecionado');
@@ -632,9 +683,6 @@ function configurarEventosBotoesFinais() {
 }
 
 async function processarSalvamento(statusSS) {
-    const elementoSS = document.getElementById('txtNumSS');
-    const elementoKM = document.getElementById('txtKMSS');
-    
     // 1. Coleta de Dados da Tela
     const numeroSS = document.getElementById('txtNumSS')?.value || '';
     const prefixoOuPlaca = document.getElementById('txtPlacaSS')?.value || '';
@@ -647,6 +695,7 @@ async function processarSalvamento(statusSS) {
     const danoSevero = document.getElementById('chkDanoSevero')?. value || '';
     const servicoRapido = document.getElementById('chkServicoRapido')?. value || '';
     const clienteEsperando = document.getElementById('chkClienteEsperando')?. value || '';
+    const statusSolicitacao = document.getElementById('txtStatusSS')?.value;
 
     // 2. Validação Inteligente
     if (!prefixoOuPlaca) {
@@ -671,15 +720,31 @@ async function processarSalvamento(statusSS) {
         sintomas: sintomaPrincipal,
         defeito_relatado: defeitoRelatado,
         servico: tipoServico,
-        status: statusSS,
+        status: statusSolicitacao,
         localizacao_veiculo: localizacaoVeiculo,
         locais_constantes: locaisConstantes,
         is_dano_severo: danoSevero,
         is_servico_rapido: servicoRapido,
         is_cliente_esperando: clienteEsperando,
-        data_abertura: new Date().toISOString() // Salva a data e hora exatas do clique
+  
         
     };
+
+    const momentoAtual = new Date().toISOString();
+
+    if(!estadoSS.editando) {
+        pacoteSS.data_abertura = momentoAtual;
+    }
+    if (statusSS === 'FINALIZADA') {
+        pacoteSS.data_fechamento = momentoAtual;
+    }
+    if (statusSS === 'FINALIZADA') {
+        const campoFechamento = document.getElementById('txtFechamentoSS');
+        if (campoFechamento) {
+            const agora = new Date();
+           campoFechamento.value = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+    }
 
     // 4. Feedback Visual (UX)
     const btnClicado = statusSS === 'FINALIZADA' ? document.getElementById('btnFinalizarSS') : document.getElementById('btnGravarSS');
