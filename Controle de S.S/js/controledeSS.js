@@ -156,7 +156,7 @@ async function buscarSSTrazerDados(numero) {
             if (campoFechamento) campoFechamento.value = formatarDataParaBR(ss.data_fechamento);
 
             // 2. Preenche os campos de texto com os dados do banco
-            if (document.getElementById('txtStatusSS')) document.getElementById('txtStatusSS').value = ss.status || ';'
+            if (document.getElementById('txtstatusSS')) document.getElementById('txtstatusSS').value = ss.status_ss || '';
             if (document.getElementById('txtKMSS')) document.getElementById('txtKMSS').value = ss.km_atual || '';
             if (document.getElementById('txtSintomaPrincipal')) document.getElementById('txtSintomaPrincipal').value = ss.sintomas || '';
             if (document.getElementById('txtDescricaoSS')) document.getElementById('txtDescricaoSS').value = ss.defeito_relatado || '';
@@ -172,13 +172,13 @@ async function buscarSSTrazerDados(numero) {
             // 3. Preenche os CheckBox
 
             const chkDano = document.getElementById('chkDanoSevero');
-            if (chkDano) chkDano.checked = ss.is_dano_severo || false;
+            if (chkDano) chkDano.checked = (ss.is_dano_severo === true || ss.is_dano_severo === 'true');
 
-            const chkCliente = document.getElementById('chkClienteEsperando');
-            if (chkCliente) chkCliente.checked = ss.is_cliente_esperando || false;
+            const chkEsperando = document.getElementById('chkClienteEsperando');
+            if (chkEsperando) chkEsperando.checked = (ss.is_cliente_esperando === true || ss.is_cliente_esperando === 'true');
             
             const chkRapido = document.getElementById('chkServicoRapido');
-            if (chkRapido) chkRapido.checked = ss.is_servico_rapido || false;
+            if (chkRapido) chkRapido.checked = (ss.is_servico_rapido === true || ss.is_servico_rapido === 'true');
 
             // 4.Traz os dados do veículo
             if (ss.identificacao_veiculo) {
@@ -451,9 +451,8 @@ function limparFormularioSS() {
 // FUNÇÕES DE BASE DE DADOS (SUPABASE)
 // ==========================================
 
-/**
- * Vai na base de dados, descobre qual é a última S.S. criada e prevê a próxima.
- */
+// * Vai na base de dados, descobre qual é a última S.S. criada e prevê a próxima.
+
 async function gerarProximoNumeroSS() {
     const txtNumSS = document.getElementById('txtNumSS');
     if (!txtNumSS) return;
@@ -494,7 +493,6 @@ async function gerarProximoNumeroSS() {
         txtNumSS.classList.add('readonly-field');
     }
 }
-
 
 /// =====================================================================
 // MÓDULO: MODAL DE SINTOMAS EM TABELA COM BUSCA (CARTÃO 3)
@@ -664,8 +662,8 @@ async function buscarSintomasNoSupabase() {
 // =====================================================================
 
 function configurarEventosBotoesFinais() {
-    const btnGravarSS = document.getElementById('btnGravarSS');       // Ajuste o ID se necessário
-    const btnFinalizarSS = document.getElementById('btnFinalizarSS'); // Ajuste o ID se necessário
+    const btnGravarSS = document.getElementById('btnGravarSS');      
+    const btnFinalizarSS = document.getElementById('btnFinalizarSS');
 
     if (btnGravarSS) {
         btnGravarSS.addEventListener('click', (e) => {
@@ -677,7 +675,7 @@ function configurarEventosBotoesFinais() {
     if (btnFinalizarSS) {
         btnFinalizarSS.addEventListener('click', (e) => {
             e.preventDefault();
-            processarSalvamento('FINALIZADA'); // Status Finalizada
+            processarSalvamento('FINALIZADA');
         });
     }
 }
@@ -692,10 +690,10 @@ async function processarSalvamento(statusSS) {
     const localizacaoVeiculo = document.getElementById('txtDescricaoLocalizacaoSS')?.value || '';
     const tipoServico = document.getElementById('cboTipoManutencaoSS')?.value;
     const locaisConstantes = document.getElementById('cboLocaisSS')?.value;
-    const danoSevero = document.getElementById('chkDanoSevero')?. value || '';
-    const servicoRapido = document.getElementById('chkServicoRapido')?. value || '';
-    const clienteEsperando = document.getElementById('chkClienteEsperando')?. value || '';
-    const statusSolicitacao = document.getElementById('txtStatusSS')?.value;
+    const danoSevero = document.getElementById('chkDanoSevero')?.checked || false;
+    const servicoRapido = document.getElementById('chkServicoRapido')?.checked || false;
+    const clienteEsperando = document.getElementById('chkClienteEsperando')?.checked || false;
+    const statusSolicitacao = document.getElementById('txtstatusSS')?.value;
 
     // 2. Validação Inteligente
     if (!prefixoOuPlaca) {
@@ -712,7 +710,7 @@ async function processarSalvamento(statusSS) {
     }
 
     // 3. Montagem do Pacote (Payload) para o Supabase
-    // ATENÇÃO: As chaves (esquerda) DEVEM ter o mesmo nome das colunas da sua tabela no banco
+
     const pacoteSS = {
         numero_ss: numeroSS,
         identificacao_veiculo: prefixoOuPlaca,
@@ -720,7 +718,7 @@ async function processarSalvamento(statusSS) {
         sintomas: sintomaPrincipal,
         defeito_relatado: defeitoRelatado,
         servico: tipoServico,
-        status: statusSolicitacao,
+        status_ss: statusSS,
         localizacao_veiculo: localizacaoVeiculo,
         locais_constantes: locaisConstantes,
         is_dano_severo: danoSevero,

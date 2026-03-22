@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('btnAbrirModalSS')?.addEventListener('click', () => {
         document.getElementById('modalSS').classList.remove('hidden');
-        buscarSSPendentes();
+        carregarSSPendentesNoModal();
     });
 
     document.getElementById('btnFecharModalSS')?.addEventListener('click', () => {
@@ -583,20 +583,6 @@ async function carregarInsumosDoEncaminhamento(idEnc) {
     }
 }
 
-// S.S. PENDENTES
-async function buscarSSPendentes() {
-    try {
-        const chamados = await dbService.execute(client.from('Solicitacao_Servicos').select('*').eq('Status', 'Pendente'));
-        const tbody = document.getElementById('tabelaSS');
-        tbody.innerHTML = "";
-        chamados?.forEach(ss => {
-            tbody.innerHTML += `<tr><td>${ss.numero_ss}</td><td>${ss.prefixo_veiculo}</td><td>${ss.defeito_relatado}</td><td><button onclick="vincularSS(${ss.numero_ss}, '${ss.prefixo_veiculo}', '${ss.defeito_relatado}')">Selecionar</button></td></tr>`;
-        });
-    } catch (err) {
-        console.error("Erro ao buscar SS:", err);
-    }
-}
-
 window.vincularSS = function(numero, prefixo, defeito) {
     document.getElementById('txtNumSS').value = numero;
     document.getElementById('txtPrefixo').value = prefixo;
@@ -739,5 +725,140 @@ function limparTelaOS() {
     }
         if(document.getElementById('txtDataFechamentoEnc')) {
         document.getElementById('txtDataFechamentoEnc').value = "Pendente...";
+    }
+}
+
+// =====================================================================
+// 1. EVENTOS DO MODAL DE S.S. PENDENTES
+// =====================================================================
+function configurarEventosModalSS() {
+    const modalSS = document.getElementById('modalSS');
+    const btnFechar = document.getElementById('btnFecharModalSS');
+    
+    // ATENÇÃO: Coloque aqui o ID do botão que a pessoa clica para ABRIR o modal
+    const btnAbrirModal = document.getElementById('btnLupaSSOrigem'); 
+
+    // Fechar o modal
+    if (btnFechar) {
+        btnFechar.addEventListener('click', () => {
+            modalSS.classList.add('hidden');
+        });
+    }
+
+    // Abrir o modal e carregar os dados
+    if (btnAbrirModal) {
+        btnAbrirModal.addEventListener('click', () => {
+            modalSS.classList.remove('hidden');
+            carregarSSPendentesNoModal(); // Chama a função que vai ao banco
+        });
+    }
+}
+
+// =====================================================================
+// 2. BUSCAR AS S.S. NO BANCO (SUPABASE)
+// =====================================================================
+async function carregarSSPendentesNoModal() {
+    const tbody = document.getElementById('tabelaSS'); // O ID do seu HTML
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">⏳ A procurar S.S. abertas...</td></tr>';
+
+    try {
+        // Busca S.S. com status ABERTA. Ajuste o nome da tabela se necessário.
+        const { data, error } = await client
+            .from('Solicitacao_Servicos')
+            .select('*')
+            .eq('status_ss', 'ABERTA')
+            .order('numero_ss', { ascending: true }); 
+
+        if (error) throw error;
+
+        tbody.innerHTML = ''; // Limpa o "A procurar..."
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #6b7280;">Nenhuma S.S. pendente no momento.</td></tr>';
+            return;
+        }
+
+        // Desenha uma linha para cada S.S. encontrada
+        data.forEach(ss => {
+            const tr = document.createElement('tr');
+            
+            tr.innerHTML = `
+                <td style="text-align: center; font-weight: bold;">${ss.numero_ss || '-'}</td>
+                <td style="text-align: center;">${ss.identificacao_veiculo || '-'}</td>
+                <td>${ss.servico || '-'}</td>
+                <td>${ss.defeito_relatado || 'Sem descrição'}</td>
+                <td style="text-align: center;">
+                    <button class="btn-importar-linha" style="padding: 4px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Importar
+                    </button>
+                </td>
+            `;
+
+            // O GATILHO: Quando clicar no botão "Importar" DESSA linha
+            const btnImportar = tr.querySelector('.btn-importar-linha');
+            btnImportar.addEventListener('click', () => importarDadosDaSSParaOS(ss));
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Erro ao carregar S.S.:", err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Erro ao carregar S.S.</td></tr>';
+    }
+}
+
+// =====================================================================
+// 3. TRANSFERIR OS DADOS PARA A TELA 
+// =====================================================================
+
+function importarDadosDaSSParaOS(ss) {
+    console.log("📥 Iniciando transferência da S.S para O.S. Dados recebidos:", ss);
+
+    // 1. Campo: NÚMERO DA S.S.
+    // Verifique no seu HTML da O.S. qual é o ID exato desta caixinha!
+    const txtNumSS = document.getElementById('txtNumSS'); 
+    if (txtNumSS) {
+        txtNumSS.value = ss.numero_ss || '';
+        console.log("✅ Campo Número S.S. preenchido!");
+    } else {
+        console.error("❌ HTML ID não encontrado: 'txtNumSS'");
+    }
+
+    // 2. Campo: PREFIXO DO VEÍCULO
+    const txtPrefixo = document.getElementById('txtPrefixo'); 
+    if (txtPrefixo) {
+        txtPrefixo.value = ss.identificacao_veiculo || '';
+        txtPrefixo.dispatchEvent(new Event('blur'));
+        console.log("✅ Campo Prefixo preenchido!");
+        
+    } else {
+        console.error("❌ HTML ID não encontrado: 'txtPrefixo'");
+    }
+
+    const cboTipoServico = document.getElementById('cboTipoServico'); 
+    if (cboTipoServico) {
+        // A MÁGICA ACONTECE AQUI: usamos .value em vez de .select
+        cboTipoServico.value = ss.servico || ''; 
+        
+        console.log(`✅ Campo Tipo de Serviço preenchido com: ${ss.servico}`);
+    } else {
+        console.error("❌ HTML ID não encontrado: 'cboTipoServico'");
+    }
+
+    // 3. Campo: DEFEITO RELATADO
+    const txtDefeito = document.getElementById('txtDefeito'); 
+    if (txtDefeito) {
+        txtDefeito.value = ss.defeito_relatado || '';
+        console.log("✅ Campo Defeito preenchido!");
+    } else {
+        console.error("❌ HTML ID não encontrado: 'txtDefeito'");
+    }
+
+    // 4. Fechar o Modal
+    const modal = document.getElementById('modalSS');
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
