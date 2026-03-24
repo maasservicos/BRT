@@ -88,6 +88,28 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+
+.btn-header-direito {
+    margin-left: auto; 
+    padding-right: 20px; 
+}
+
+
+.btn-link-os {
+    display: inline-block;
+    background-color: var(--laranja-maas); 
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.btn-link-os:hover {
+    background-color: var(--success);
+}
 .branding {
     display: flex;
     align-items: center;
@@ -394,41 +416,105 @@ button {
 
 
 /* ========================================== */
-/* RESPONSIVIDADE (TELEMÓVEL / MOBILE)        */
+/* RESPONSIVIDADE (TELEMÓVEL E TABLET)        */
 /* ========================================== */
 
-/* Regras que só são ativadas em ecrãs menores que 768px */
 @media (max-width: 768px) {
-    
-    /* 1. Transforma todas as frações em colunas de 100% */
-    .col-3, 
-    .col-4, 
-    .col-6, 
-    .col-8 {
+    /* 1. Estrutura Geral e Espaçamentos */
+    main {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 15px; /* Reduz um pouco o respiro interno para ganhar tela */
+    }
+
+    /* 2. Grid - Transforma todas as frações em colunas de 100% (Empilha tudo) */
+    .col-3, .col-4, .col-6, .col-7, .col-8, .col-12 {
         width: 100%;
     }
 
-    /* 2. Ajusta os botões do rodapé para não ficarem esmagados */
+    .grid {
+        gap: 15px;
+    }
+
+    /* 3. Cabeçalho (Header) */
+    .header-maas {
+        padding: 15px;
+    }
+
+    .branding {
+        flex-direction: column;
+        text-align: center;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .title {
+        font-size: 18px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+    }
+
+    /* Centraliza o botão do cabeçalho quando a tela quebra no telemóvel */
+    .btn-header-direito {
+        margin-left: 0; 
+        padding-right: 0;
+        margin-top: 10px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* 4. Rodapé e Botões de Ação */
     .actions-footer {
         flex-direction: column; 
         align-items: center;
-        gap: 15px;
+        gap: 12px;
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
 
     .btn-gerar, 
     .btn-fechar-ss {
         width: 100%; 
+        height: 60px; /* Reduzido de 90px para não ocupar metade da tela do celular */
+        font-size: 16px;
     }
 
-    /* 3. Reduz o tamanho da fonte do título para não cortar no telemóvel */
-    .title {
-        font-size: 18px;
+    /* 5. Modais e Tabelas */
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    /* Permite que a tabela arraste para o lado no celular se for muito larga */
+    .modal-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .branding {
-        flex-direction: column;
+    .table-maas {
+        min-width: 500px; /* Garante que os dados não fiquem ilegíveis de tão esmagados */
+    }
+}
+
+/* Ajustes extras para telas muito pequenas (Smartphones menores) */
+@media (max-width: 480px) {
+    .btn-toggle-large {
+        font-size: 14px;
+        padding: 12px;
+    }
+    
+    .btn-link-os {
+        width: 100%; /* O botão do cabeçalho fica na largura total */
         text-align: center;
-        width: 100%;
     }
 }
 

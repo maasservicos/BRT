@@ -4,6 +4,7 @@
 :root {
     --bg-maas: #F2ECDE;
     --header-maas: #183B48;
+    --laranja-maas: #f97316;
     --card: #ffffff;
     --accent: #2563eb;
     --accent-hover: #1d4ed8;
@@ -24,60 +25,28 @@ html, body {
 
 body {
     margin: 0;
+    padding: 0;
     background-color: var(--header-maas);
     font-family: var(--font);
     color: var(--text-main);
+    overflow-x: hidden; /* Corta vazamentos globais */
 }
 
 /* Utilitários de Margem e Preenchimento */
-.mt-15 {
-    margin-top: 15px;
-}
-
-.mt-20 {
-    margin-top: 20px;
-}
-
-.p-15 {
-    padding: 15px;
-}
-
-.p-20 {
-    padding: 20px;
-}
-
-.w-100 {
-    width: 100%;
-}
+.mt-15 { margin-top: 15px; }
+.mt-20 { margin-top: 20px; }
+.p-15 { padding: 15px; }
+.p-20 { padding: 20px; }
+.w-100 { width: 100%; }
 
 /* Utilitários de Texto e Fundo */
-.text-center {
-    text-align: center;
-}
-
-.text-muted {
-    color: var(--text-muted);
-}
-
-.text-dark {
-    color: var(--text-main);
-}
-
-.fw-bold {
-    font-weight: bold;
-}
-
-.bg-light {
-    background-color: #f8fafc;
-}
-
-.bg-light-gray {
-    background-color: #f4f4f4;
-}
-
-.hidden {
-    display: none !important;
-}
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-dark { color: var(--text-main); }
+.fw-bold { font-weight: bold; }
+.bg-light { background-color: #f8fafc; }
+.bg-light-gray { background-color: #f4f4f4; }
+.hidden { display: none !important; }
 
 /* ========================================== */
 /* CABEÇALHO DO SISTEMA                       */
@@ -87,6 +56,27 @@ body {
     padding: 20px 24px;
     background-color: var(--header-maas);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-header-direito {
+    margin-left: auto; 
+    padding-right: 20px; 
+}
+
+.btn-link-os {
+    display: inline-block;
+    background-color: var(--laranja-maas); 
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.btn-link-os:hover {
+    background-color: var(--success);
 }
 
 .branding {
@@ -139,9 +129,7 @@ body {
 }
 
 @media (max-width: 1024px) {
-    .layout {
-        grid-template-columns: 1fr;
-    }
+    .layout { grid-template-columns: 1fr; }
 }
 
 .grid {
@@ -152,19 +140,7 @@ body {
 }
 
 @media (max-width: 900px) {
-    .grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-}
-
-@media (max-width: 600px) {
-    .grid {
-        grid-template-columns: repeat(12, 1fr);
-    }
-    
-    .col-2, .col-3, .col-4, .col-6, .col-8 {
-        grid-column: span 12;
-    }
+    .grid { grid-template-columns: repeat(6, 1fr); }
 }
 
 .col-2 { grid-column: span 2; }
@@ -272,43 +248,14 @@ button {
     transition: 0.2s;
 }
 
-.btn-primary {
-    background: var(--header-maas);
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: #112a34;
-}
-
-.btn-success {
-    background: var(--success);
-    color: #fff;
-}
-
-.btn-success:hover {
-    background: #15803d;
-}
-
-.btn-secondary {
-    background: #e2e8f0;
-    color: #1e293b;
-}
-
-.btn-secondary:hover {
-    background: #cbd5e1;
-}
-
-.btn-ghost {
-    background: transparent;
-    color: #1e293b;
-    border: 1px solid #cbd5e1;
-}
-
-.btn-ghost:hover {
-    background: #0373e2;
-    color: white;
-}
+.btn-primary { background: var(--header-maas); color: #fff; }
+.btn-primary:hover { background: #112a34; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #15803d; }
+.btn-secondary { background: #e2e8f0; color: #1e293b; }
+.btn-secondary:hover { background: #cbd5e1; }
+.btn-ghost { background: transparent; color: #1e293b; border: 1px solid #cbd5e1; }
+.btn-ghost:hover { background: #0373e2; color: white; }
 
 .btn-small {
     padding: 8px 14px;
@@ -317,11 +264,7 @@ button {
     border-radius: 6px;
     margin-bottom: 4px;
 }
-
-.btn-small:hover {
-    background: #16a34a;
-    border-color: #000000;
-}
+.btn-small:hover { background: #16a34a; border-color: #000000; }
 
 .btn-icon {
     padding: 5px;
@@ -331,27 +274,11 @@ button {
     justify-content: center;
 }
 
-.btn-outline-dark {
-    background-color: #F2ECDE;
-    color: black;
-    border: 1px solid #183B48;
-}
+.btn-outline-dark { background-color: #F2ECDE; color: black; border: 1px solid #183B48; }
+.btn-outline-dark:hover { background-color: #183B48; color: white; }
 
-.btn-outline-dark:hover {
-    background-color: #183B48;
-    color: white;
-}
-
-.btn-outline-primary {
-    border: 1px solid #005a9d;
-    color: #005a9d;
-    background: white;
-}
-
-.btn-outline-primary:hover {
-    background-color: #005a9d;
-    color: white;
-}
+.btn-outline-primary { border: 1px solid #005a9d; color: #005a9d; background: white; }
+.btn-outline-primary:hover { background-color: #005a9d; color: white; }
 
 /* ========================================== */
 /* SEÇÃO 1: REGISTRO DA O.S                   */
@@ -364,17 +291,8 @@ button {
     font-weight: 700;
 }
 
-.badge-gray {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-}
-
-.badge-blue {
-    background: #e0f2fe;
-    color: #0369a1;
-    border: 1px solid #bae6fd;
-}
+.badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.badge-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
 
 /* ========================================== */
 /* SEÇÃO 4: ENCAMINHAMENTOS (TABELAS)         */
@@ -383,8 +301,9 @@ button {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
-    overflow: hidden;
+    overflow-x: auto; /* Garante scroll interno */
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .table-maas {
@@ -394,250 +313,193 @@ button {
     font-size: 13px;
 }
 
-.table-maas th {
-    background: #f8fafc;
-    padding: 12px;
-    border-bottom: 2px solid #cbd5e1;
-    color: #475569;
-}
-
-.table-maas td {
-    padding: 12px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.table-maas tr:hover {
-    background: #f1f5f9;
-}
-
-.table-historico th {
-    font-size: 11px;
-}
-
-.table-historico tbody {
-    font-size: 12px;
-}
+.table-maas th { background: #f8fafc; padding: 12px; border-bottom: 2px solid #cbd5e1; color: #475569; }
+.table-maas td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+.table-maas tr:hover { background: #f1f5f9; }
+.table-historico th { font-size: 11px; }
+.table-historico tbody { font-size: 12px; }
 
 /* ========================================== */
 /* SEÇÃO 5: INSUMOS (PEÇAS, SERVIÇOS, M.O)    */
 /* ========================================== */
-.insumo-categories {
-    background: #eee;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.btn-ghost.active {
-    background-color: #183B48 !important;
-    color: white !important;
-    font-weight: bold;
-}
-
-.insumo-form {
-    background: #f8fafc;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-}
-
-.row-rascunho {
-    background-color: #fffbeb !important;
-    border-left: 4px solid #f59e0b;
-}
-
-.badge-pendente {
-    font-size: 10px;
-    background: #fef3c7;
-    color: #92400e;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 5px;
-    font-weight: bold;
-    border: 1px solid #fcd34d;
-}
-
-.btn-remove-rascunho {
-    background: none;
-    border: none;
-    color: #ef4444;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-.msg-warning {
-    font-size: 11px;
-    color: #b45309;
-    margin-top: 8px;
-}
+.insumo-categories { background: #eee; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
+.btn-ghost.active { background-color: var(--laranja-maas) !important; color: white !important; font-weight: bold; }
+.insumo-form { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.row-rascunho { background-color: #fffbeb !important; border-left: 4px solid #f59e0b; }
+.badge-pendente { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; border: 1px solid #fcd34d; }
+.btn-remove-rascunho { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; }
+.msg-warning { font-size: 11px; color: #b45309; margin-top: 8px; }
 
 /* ========================================== */
 /* SEÇÃO 6: ORÇAMENTOS E DOCUMENTOS           */
 /* ========================================== */
-.files-box {
-    border: 1px dashed #cbd5e1;
-    padding: 16px;
-    border-radius: 8px;
-    background: #f8fafc;
-}
-
-.file-input {
-    width: 100%;
-    padding: 8px 0;
-    font-size: 13px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-}
-
-.divider-sm {
-    height: 1px;
-    background: #e2e8f0;
-    margin: 10px 0;
-    border: none;
-}
-
-.divider {
-    height: 1px;
-    background: var(--border);
-    margin: 20px 0;
-    border: none;
-}
+.files-box { border: 1px dashed #cbd5e1; padding: 16px; border-radius: 8px; background: #f8fafc; }
+.file-input { width: 100%; padding: 8px 0; font-size: 13px; border: none; background: transparent; cursor: pointer; }
+.divider-sm { height: 1px; background: #e2e8f0; margin: 10px 0; border: none; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; border: none; }
 
 /* ========================================== */
 /* COLUNA DIREITA: RESUMO DA O.S              */
 /* ========================================== */
-.summary {
-    position: sticky;
-    top: 24px;
-}
-
-.summary .row {
-    display: flex;
-    justify-content: space-between;
-    margin: 12px 0;
-    font-size: 14px;
-    color: #475569;
-}
-
-.summary .total {
-    font-weight: 800;
-    font-size: 18px;
-    color: var(--header-maas);
-    border-top: 2px dashed var(--border);
-    padding-top: 12px;
-}
+.summary { position: sticky; top: 24px; }
+.summary .row { display: flex; justify-content: space-between; margin: 12px 0; font-size: 14px; color: #475569; }
+.summary .total { font-weight: 800; font-size: 18px; color: var(--header-maas); border-top: 2px dashed var(--border); padding-top: 12px; }
 
 /* ========================================== */
 /* MODAIS (S.S PENDENTES E INSUMOS)           */
 /* ========================================== */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(3px);
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(3px); }
+.modal-content { background: var(--card); width: 90%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; }
+.modal-header { background: var(--header-maas); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.modal-header-dark { background: #333; }
+.modal-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.btn-close { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; transition: 0.2s; }
+.btn-close:hover { color: #ef4444; }
+.btn-close-dark { background: none; border: none; color: white; cursor: pointer; font-size: 20px; }
+.modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+.search-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.search-bar input { flex: 1; height: 30px; }
+.table-scroll-container { background: white; border: 1px solid #ccc; height: 300px; overflow-y: auto; overflow-x: auto; width: 100%; }
+.table-bordered th, .table-bordered td { border: 1px solid #aaa; }
+.table-bordered thead { position: sticky; top: 0; background: #d3e4f5; z-index: 10; }
+.modal-footer { margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; }
 
-.modal-content {
-    background: var(--card);
-    width: 90%;
-    max-width: 800px;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-}
+/* ========================================== */
+/* RESPONSIVIDADE BLINDADA (A OPÇÃO NUCLEAR)  */
+/* ========================================== */
 
-.modal-lg {
-    max-width: 800px;
-}
+@media (max-width: 768px) {
+    /* 1. MATA O VAZAMENTO GLOBAL */
+    html, body {
+        width: 100vw !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
 
-.modal-header {
-    background: var(--header-maas);
-    color: #fff;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    /* 2. ESTRUTURA VIRA BLOCO (Não estica nunca) */
+    .container, .layout, main.stack, aside.summary {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
 
-.modal-header-dark {
-    background: #333;
-}
+    .container {
+        padding: 10px !important;
+    }
 
-.modal-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
+    /* 3. CARTÕES INDESTRUTÍVEIS */
+    .card {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 15px !important;
+        margin-bottom: 15px !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important; /* Se a tabela tentar empurrar, o cartão corta as asas dela */
+    }
 
-.btn-close {
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 24px;
-    cursor: pointer;
-    transition: 0.2s;
-}
+    /* 4. MATA O GRID E EMPILHA AS COLUNAS */
+    .grid {
+        display: block !important;
+        width: 100% !important;
+    }
 
-.btn-close:hover {
-    color: #ef4444;
-}
+    .col-2, .col-3, .col-4, .col-6, .col-8, .col-12 {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+        box-sizing: border-box !important;
+    }
 
-.btn-close-dark {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-size: 20px;
-}
+    /* 5. INPUTS COM BOTÕES AO LADO (Ex: Lupa e Botão +) */
+    .inline, .col-2 > div[style] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
 
-.modal-body {
-    padding: 20px;
-    max-height: 60vh;
-    overflow-y: auto;
-}
+    .inline input, .col-2 > div[style] input {
+        flex: 1 !important;
+        min-width: 0 !important; /* O SEGREDO: Permite que o input encolha na tela do celular */
+    }
 
-.search-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-}
+    .inline button, .col-2 > div[style] button {
+        width: auto !important;
+        flex-shrink: 0 !important;
+    }
 
-.search-bar input {
-    flex: 1;
-    height: 30px;
-}
+    /* 6. CABEÇALHO CENTRALIZADO */
+    .header-maas {
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 15px !important;
+    }
 
-.table-scroll-container {
-    background: white;
-    border: 1px solid #ccc;
-    height: 300px;
-    overflow-y: auto;
-}
+    .branding {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        gap: 12px !important;
+    }
 
-.table-bordered th, 
-.table-bordered td {
-    border: 1px solid #aaa;
-}
+    .btn-header-direito {
+        width: 100% !important;
+        margin: 10px 0 0 0 !important;
+        padding: 0 !important;
+    }
 
-.table-bordered thead {
-    position: sticky;
-    top: 0;
-    background: #d3e4f5;
-    z-index: 10;
-}
+    .btn-link-os {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
 
-.modal-footer {
-    margin-top: 15px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    /* 7. ESMAGA OS INLINES REBELDES (Seção 4) */
+    #secEncaminhamento > div[style] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    #secEncaminhamento h2 { margin-bottom: 0 !important; text-align: center !important; }
+
+    /* 8. TABELAS SEGURAS */
+    .table-wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .table-maas {
+        min-width: 600px !important; /* A tabela é grande, mas o wrapper a segura */
+    }
+
+    /* 9. BOTÕES DO RODAPÉ */
+    .actions {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+
+    .actions button {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .modal-content {
+        width: 95% !important;
+        margin: 10px auto !important;
+    }
 }

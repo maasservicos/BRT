@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abertura de Ocorrências - BRT</title>
+    <link rel="stylesheet" href="../CSS/form.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo">m<span>.</span></div>
+            <div>
+                <h1>Ocorrências</h1>
+                <p>Abertura - BRT</p>
+            </div>
+        </header>
+
+        <form action="#" method="POST">
+            
+            <div class="card">
+                <div class="card-title">1º Informações do Veículo</div>
+                
+                <div class="row">
+                    <div class="col form-group">
+                        <label><span class="required">*</span> Nº da Ocorrência</label>
+                        <div class="input-with-btn">
+                            <input type="text" placeholder="Nº da O.C" >
+                            <button type="button" class="icon-btn btn-plus"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <span class="auto-text">Automático</span>
+                    </div>
+                    
+                    <div class="col form-group">
+                        <label>Abertura</label>
+                        <input type="date"  readonly>
+                        <span class="auto-text">Automático</span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group">
+                        <label><span class="required">*</span> Prefixo / Placa</label>
+                        <div class="input-with-btn">
+                            <input type="text" placeholder="Prefixo / Placa do Veículo">
+                            <button type="button" class="icon-btn btn-search"><i class="fas fa-search"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="col form-group">
+                        <label>Nome do Bem</label>
+                        <input type="text" value="Nome do Bem" readonly>
+                        <span class="auto-text">Automático</span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group km-group">
+                        <label><span class="required">*</span> Km do Veículo</label>
+                        <input type="text" placeholder="Informe o Km atual">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">2º Defeito Relatado e Localização</div>
+                
+                <div class="row">
+                    <div class="col form-group">
+                        <label><span class="required">*</span> Locais Constantes</label>
+                        <select>
+                            <option value="">Selecione</option>
+                            <option value="motor">Motor</option>
+                            <option value="freio">Freios</option>
+                            <option value="eletrica">Elétrica</option>
+                        </select>
+                        <textarea placeholder="Descrição do Local do Veículo ..." class="mt-15"></textarea>
+                    </div>
+                    
+                    <div class="col form-group">
+                        <label><span class="required">*</span> Defeito Relatado</label>
+                        <textarea placeholder="Descrição do Problema do Veículo ..." class="h-100"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-submit-container">
+                <button type="submit" class="btn-submit">Enviar para Atendimento</button>
+            </div>
+
+        </form>
+    </div>
+
+</body>
+</html>

@@ -15,7 +15,10 @@
             </div>
             <div>
                 <div class="title">Gerenciamento — Ordem de Serviço</div>
-                <div class="subtitle">Abertura, Alteração e Fechamento</div>
+                <div class="subtitle">Abertura, Alteração e Fechamento</div>   
+            </div>
+            <div class="btn-header-direito">
+                    <a href="Controle de S.S/controledeSS.html" class="btn-link-os">Ir para Solicitação de Serviço &rarr;</a>
             </div>
         </div>
     </header>
@@ -193,14 +196,16 @@
                     </div>
                 </section>
 
-                <section class="card">
+                <section class="card" id="secInsumos">
                     <h2>5. Insumos (Peças, Serviços & Mão de Obra)</h2>
                     <p class="help">Selecione o tipo de insumo para abrir a consulta padrão ou digite o código.</p>
 
-                    <div class="actions insumo-categories">
+                    <div class="actions insumo-categories" id="">
                         <button type="button" class="btn-ghost" onclick="configurarTipo('PRODUTO')">📦 Peças</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('SERVICO')">🛠️ Serviços</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('TECNICO')">👤 Mão de Obra</button>
+                        <button type="button" class="btn-ghost" onclick="window.location.href='Mão de Obra/dashboard.html'">👤 Painel de Mão de Obra</button>
+               
                     </div>
 
                     <div class="grid insumo-form">
@@ -230,26 +235,28 @@
 
                     <div class="grid">
                         <div class="col-12">
-                            <table class="table-maas table-insumos mt-15">
-                                <thead>
-                                    <tr>
-                                        <th>Tipo</th>
-                                        <th>Cód</th>
-                                        <th>Descrição</th>
-                                        <th>Qtd/Hrs</th>
-                                        <th>Vl. Unit</th>
-                                        <th>Total</th>
-                                        <th style="width: 50px;">Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="listaItensOS">
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted p-20">
-                                            Nenhum insumo adicionado ao rascunho.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div class="table-wrapper">
+                                <table class="table-maas table-insumos mt-15">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo</th>
+                                            <th>Cód</th>
+                                            <th>Descrição</th>
+                                            <th>Qtd/Hrs</th>
+                                            <th>Vl. Unit</th>
+                                            <th>Total</th>
+                                            <th style="width: 50px;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="listaItensOS">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted p-20">
+                                                Nenhum insumo adicionado ao rascunho.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                             <p id="msgRascunho" class="msg-warning hidden">
                                 ⚠️ Itens em destaque amarelo ainda não foram salvos no banco de dados.
                             </p>
@@ -257,40 +264,7 @@
                     </div>
                 </section>
 
-               <!-- <section class="card">
-                    <h2>6. Orçamentos e Documentos</h2>
-                    <p class="help">Anexe no mínimo três orçamentos (obrigatório para serviços/compras externas).</p>
-                    <div class="grid">
-                        <div class="col-6">
-                            <div class="files-box">
-                                <label class="req">Anexos de Orçamentos (Mínimo 3)</label>
-                                <input id="fileOrc1" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
-                                <hr class="divider-sm"/>
-                                <input id="fileOrc2" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
-                                <hr class="divider-sm"/>
-                                <input id="fileOrc3" type="file" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
-                                <hr class="divider-sm"/>
-                                <label>Anexos Extras / Manuais</label>
-                                <input id="fileOrcExtra" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="file-input" />
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <label class="req" for="cboMenorPreco">Foi escolhido o menor preço?</label>
-                            <select id="cboMenorPreco" onchange="document.getElementById('divJustificativa').classList.toggle('hidden', this.value === 'sim')">
-                                <option value="sim">Sim</option>
-                                <option value="nao">Não</option>
-                            </select>
-                            
-                            <div id="divJustificativa" class="hidden mt-15">
-                                <label class="req" for="txtJustificativa">Justificativa Técnica/Operacional</label>
-                                <textarea id="txtJustificativa" placeholder="Explique por que o menor preço não foi escolhido para fins de auditoria..."></textarea>
-                            </div>
-                        </div>
-                    </div>  
-                </section>-->
-            
-
-                <section class="card bg-light">
+               <section class="card bg-light">
                     <div class="actions">
                         <button id="btnSalvarOS" type="button" class="btn-primary">💾 Salvar O.S</button>
                         <button id="btnFinalizarOS" type="button" class="btn-success">✅ Finalizar O.S</button>
