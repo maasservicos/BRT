@@ -296,6 +296,22 @@ textarea:focus {
     .Linha {
         height: 40px; /* Um pouco menor no mobile */
     }
+
+      .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    /* Permite que a tabela arraste para o lado no celular se for muito larga */
+    .modal-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
 }
 
 /* Ajuste para alinhar ícones dentro do input-group */
@@ -369,6 +385,137 @@ textarea:focus {
 }
 
 .col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================== */
+/* MODAL DE BUSCA DE VEICULOS     */
+/* ========================================== */
+
+/* 1. O fundo escuro que cobre o site inteiro */
+.modal-overlay {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100vw; 
+    height: 100vh; 
+    background-color: rgba(0, 0, 0, 0.6); 
+    z-index: 9999;
+    
+    /* Centralização com Flexbox */
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+}
+
+/* 2. A caixa branca flutuante (O Modal em si) */
+.modal-content {
+    background-color: var(--bg-maas);
+    width: 90%; 
+    max-width: 650px;
+    max-height: 90vh;
+    border-radius: 8px; 
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); 
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 3. O Cabeçalho do Modal (Onde fica o título e o botão X) */
+.modal-header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #2c3e50;
+}
+
+/* O botão de fechar (X) */
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.btn-close:hover {
+    color: #e53e3e;
+}
+
+/* 4. O Corpo do Modal (Onde estão a pesquisa e a tabela) */
+.modal-body {
+    padding: 9px;
+    overflow-y: auto; 
+}
+
+/* 5. Estética do campo de pesquisa interno */
+.modal-body .input-group {
+    margin-bottom: 15px;
+}
+
+.modal-body .input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+td {
+    padding-right: 20px;
+    padding-top: 2px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--header-maas);
+
+}
+
+
+/* ===================================================================== */
+/* MODAL DE SINTOMAS - ESTRUTURA E OVERLAY                               */
+/* ===================================================================== */
+
+/* O fundo escuro que bloqueia a tela de trás */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.65);
+    z-index: 9999;
+    
+    /* Centraliza a caixa branca na tela */
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+}
+
+/* A classe de controle (O interruptor de luz) */
+.modal-overlay.hidden {
+    display: none !important; 
+}
+
+/* A caixa principal do modal */
+.modal-content {
+    background-color: #ffffff;
+    width: 95%;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    overflow: hidden; /* Garante que o header escuro não vaze pelos cantos arredondados */
     display: flex;
     flex-direction: column;
 }

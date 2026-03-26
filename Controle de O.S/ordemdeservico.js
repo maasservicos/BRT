@@ -2,10 +2,8 @@ import { client } from './supabaseClient.js';
 
 /* ==========================================================================
    0. CAMADA DE SERVIÇO (DATABASE REPOSITORY)
-   Centraliza e trata todos os erros de banco de dados em um só lugar.
    ========================================================================== */
 const dbService = {
-    // Intercepta qualquer requisição do Supabase e padroniza a resposta/erro
     async execute(query) {
         const { data, error } = await query;
         if (error) {
@@ -39,15 +37,15 @@ document.addEventListener('DOMContentLoaded', function() {
         txtDefeito.addEventListener('input', () => { txtObs.value = txtDefeito.value; });
     }
 
-    // Comportamento dos Modais
+    // Comportamento dos Modais Base
     document.getElementById('btnLupaInsumo')?.addEventListener('click', () => {
         document.getElementById('modalInsumos').classList.remove('hidden');
         document.getElementById('txtBuscaInsumo').value = "";
         document.getElementById('txtBuscaInsumo').focus();
 
         if (typeof window.carregarListaInsumosModal === "function") {
-        window.carregarListaInsumosModal(""); 
-    }
+            window.carregarListaInsumosModal(""); 
+        }
     });
 
     document.getElementById('btnAbrirModalSS')?.addEventListener('click', () => {
@@ -58,6 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnFecharModalSS')?.addEventListener('click', () => {
         document.getElementById('modalSS').classList.add('hidden');
     });
+
+    // INICIA OS NOVOS MODAIS (etapas E FORNECEDORES)
+    configurarEventosModalEtapas();
+    configurarEventosModalFornecedores();
 });
 
 /* ==========================================================================
@@ -84,7 +86,7 @@ function atualizarDataVisual(tipo) {
 function aplicarStatusVisual(status) {
     const isFechada = (status === 'FECHADA' || status === 'FINALIZADA');
     const texto = isFechada ? "FECHADA" : "ABERTA";
-    const cor = isFechada ? "#ef4444" : "#22c55e"; // Vermelho ou Verde
+    const cor = isFechada ? "#ef4444" : "#22c55e"; 
     
     ['badgeStatusTopo', 'lblStatus'].forEach(id => {
         const el = document.getElementById(id);
@@ -101,14 +103,13 @@ function atualizarTextoBotaoOS(isEdicao) {
 
     if (isEdicao) {
         btnOS.innerHTML = "💾 Atualizar O.S";
-        btnOS.style.backgroundColor = "#0284c7"; // Azul
+        btnOS.style.backgroundColor = "#0284c7"; 
     } else {
         btnOS.innerHTML = "💾 Salvar O.S";
-        btnOS.style.backgroundColor = "#16a34a"; // Verde
+        btnOS.style.backgroundColor = "#16a34a"; 
     }
 }
 
-// Controla a aba ativa na Seção 5
 window.configurarTipo = function(tipo) {
     window.tipoBuscaAtual = tipo;
     const lblCod = document.getElementById('lblTipoInsumo');
@@ -128,11 +129,9 @@ window.configurarTipo = function(tipo) {
 /* ==========================================================================
    3. SEÇÕES 1 E 2: REGISTRO DA O.S E IDENTIFICAÇÃO DO ATIVO
    ========================================================================== */
-// Botão: Nova O.S
 document.getElementById('btnNovaOS')?.addEventListener('click', async function() {
     this.disabled = true;
     try {
-        // Usando nossa camada dbService
         const data = await dbService.execute(client.from('Ordens_Servico').select('numero_sequencial').order('numero_sequencial', { ascending: false }).limit(1));
         
         let proximo = (data && data.length > 0) ? data[0].numero_sequencial + 1 : 1;
@@ -150,7 +149,6 @@ document.getElementById('btnNovaOS')?.addEventListener('click', async function()
     }
 });
 
-// Gatilho: Pesquisar O.S pelo número
 document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
     const numOS = parseInt(this.value);
     if (!numOS || isNaN(numOS)) return;
@@ -163,6 +161,9 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             document.getElementById('txtPrefixo').value = os.prefixo_veiculo || "";
             document.getElementById('numKm').value = os.km_atual || 0;
             document.getElementById('txtDefeito').value = os.defeito_relatado || "";
+            
+            const chkDano = document.getElementById('chkDanoSevero');
+            if(chkDano) chkDano.checked = !!os.is_dano_severo; 
             
             carregarHistoricoEncaminhamentos();
             liberarCamposEncaminhamento(false);
@@ -183,7 +184,6 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
     }
 });
 
-// Gatilho: Pesquisar dados do Veículo pelo Prefixo
 document.getElementById('txtPrefixo')?.addEventListener('blur', async function() {
     const prefixo = this.value.trim();
     if (!prefixo) return;
@@ -207,10 +207,11 @@ document.getElementById('txtPrefixo')?.addEventListener('blur', async function()
 /* ==========================================================================
    4. SEÇÕES 3 E 4: DIAGNÓSTICO E ENCAMINHAMENTOS
    ========================================================================== */
+// 1. FUNÇÃO QUE LIBERA OU BLOQUEIA A TELA DE ENCAMINHAMENTOS
 function liberarCamposEncaminhamento(status) {
-    // 1. Removi o '#txtCodFornecedor' desta lista geral
+    // Adicionei o '#btnLupaEtapa' na lista para ele destravar junto com a tela
     const seletores = [
-        '#cboTarefaEncaminhamento', '#txtCodEtapa', '#cboOficinaExterna', 
+        '#cboTarefaEncaminhamento', '#txtCodEtapa', '#btnLupaEtapa', '#cboOficinaExterna', 
         '#txtDataEncaminhamento', '#txtDefeitoEncaminhamento', '#txtCodInsumo', 
         '#numQtdInsumoLinha', '#numValorInsumo', '#btnAdicionarInsumo'
     ];
@@ -220,17 +221,21 @@ function liberarCamposEncaminhamento(status) {
         if (el) el.disabled = !status;
     });
 
-    // 2. Regra Exclusiva para o Fornecedor (CNPJ)
+    // 2. Regra Exclusiva para o Fornecedor e sua Lupa
     const campoFornecedor = document.getElementById('txtCodFornecedor');
     const cboExterna = document.getElementById('cboOficinaExterna');
+    const btnLupaForn = document.getElementById('btnLupaFornecedor'); // <-- Capturamos a Lupa
     
     if (campoFornecedor && cboExterna) {
         if (!status) {
-            // Se estiver bloqueando a tela inteira, bloqueia ele também
+            // Tela bloqueada = Campo e Lupa bloqueados
             campoFornecedor.disabled = true;
+            if (btnLupaForn) btnLupaForn.disabled = true;
         } else {
-            // Se estiver liberando a tela, SÓ libera o Fornecedor se estiver "Sim"
-            campoFornecedor.disabled = (cboExterna.value !== 'sim');
+            // Tela liberada = Verifica se é serviço externo para liberar o fornecedor
+            const isExterno = (cboExterna.value === 'sim');
+            campoFornecedor.disabled = !isExterno;
+            if (btnLupaForn) btnLupaForn.disabled = !isExterno; // Lupa segue a mesma regra!
         }
     }
 }
@@ -251,21 +256,25 @@ document.getElementById('btnNovoEncaminhamento')?.addEventListener('click', func
     atualizarDataVisual();
 });
 
-// Gatilho: Bloqueia/Libera CNPJ conforme o tipo de serviço
 document.getElementById('cboOficinaExterna')?.addEventListener('change', function() {
     const campoFornecedor = document.getElementById('txtCodFornecedor');
+    const btnLupaForn = document.getElementById('btnLupaFornecedor'); // <-- Capturamos a Lupa
+
     if (!campoFornecedor) return;
 
     if (this.value === 'sim') {
+        // Se for Sim, libera os dois
         campoFornecedor.disabled = false;
-        campoFornecedor.focus(); // Já joga o cursor para ele digitar
+        if (btnLupaForn) btnLupaForn.disabled = false;
+        campoFornecedor.focus(); 
     } else {
+        // Se for Não, bloqueia os dois e limpa o texto
         campoFornecedor.disabled = true;
-        campoFornecedor.value = ""; // Limpa o campo se ele desistir e marcar "Não"
+        if (btnLupaForn) btnLupaForn.disabled = true;
+        campoFornecedor.value = ""; 
     }
 });
 
-// Busca descrição da Etapa ao sair do campo
 document.getElementById('txtCodEtapa')?.addEventListener('blur', async function() {
     const cod = this.value.trim();
     const campoDesc = document.getElementById('txtDescricaoEtapa');
@@ -283,11 +292,10 @@ document.getElementById('txtCodEtapa')?.addEventListener('blur', async function(
     }
 });
 
-// Botão: Salvar Encaminhamento Individual
 document.getElementById('btnSalvarEncaminhamento')?.addEventListener('click', async function() {
     if (!window.idOSGlobal) return alert("⚠️ Salve a O.S. principal antes de adicionar encaminhamentos.");
 
-    const tarefa = document.getElementById('cboTarefaEncaminhamento').value;
+    const tarefa = document.getElementById('cboTarefaEncaminhamento').value; // Adapte caso tenha mudado o ID da tarefa para input
     const etapa = document.getElementById('txtCodEtapa').value;
     const descricao = document.getElementById('txtDefeitoEncaminhamento').value; 
     const servicoExterno = document.getElementById('cboOficinaExterna').value === 'sim';
@@ -297,13 +305,11 @@ document.getElementById('btnSalvarEncaminhamento')?.addEventListener('click', as
 
     try {
         if (window.idEncaminhamentoAtivo && !window.idEncaminhamentoAtivo.startsWith('TEMP')) {
-            // UPDATE
             await dbService.execute(client.from('OS_Encaminhamentos').update({
                 tarefa, codigo_etapa: etapa, encaminhamento_descricao: descricao, servico_externo: servicoExterno, cod_fornecedor: codFornecedor
             }).eq('id', window.idEncaminhamentoAtivo));
             alert("Encaminhamento atualizado!");
         } else {
-            // INSERT
             const encs = await dbService.execute(client.from('OS_Encaminhamentos').select('numero_encaminhamento').eq('id_os', window.idOSGlobal));
             const proximoNumero = (encs?.length || 0) + 1;
 
@@ -323,7 +329,6 @@ document.getElementById('btnSalvarEncaminhamento')?.addEventListener('click', as
     }
 });
 
-// Funções Expostas para a Tabela (onclick HTML)
 window.editarEncaminhamento = async function(idEnc) {
     try {
         const enc = await dbService.execute(client.from('OS_Encaminhamentos').select('*').eq('id', idEnc).single());
@@ -340,7 +345,6 @@ window.editarEncaminhamento = async function(idEnc) {
         document.getElementById('txtCodFornecedor').value = enc.cod_fornecedor || "";
         document.getElementById('txtDefeitoEncaminhamento').value = enc.encaminhamento_descricao || "";
 
-        
         const campoFechamentoEnc = document.getElementById('txtDataConclusao');
         if (campoFechamentoEnc) {
             if (enc.data_conclusao) {
@@ -436,20 +440,14 @@ async function carregarHistoricoEncaminhamentos() {
 /* ==========================================================================
    5. SEÇÃO 5: INSUMOS (PEÇAS, SERVIÇOS E MÃO DE OBRA) E MODAL SS
    ========================================================================== */
-
 window.carregarListaInsumosModal = async function(termo = "") {
     let config = { tabela: 'Apoio_Produtos', colCod: 'codigo', colDesc: 'descricao' };
     if (window.tipoBuscaAtual === "SERVICO") config = { tabela: 'Apoio_Servicos', colCod: 'codigo', colDesc: 'descricao' };
     if (window.tipoBuscaAtual === "TECNICO") config = { tabela: 'FuncionariosBRT', colCod: 'cod_matricula', colDesc: 'nome' };
 
     try {
-        // 1. Prepara a consulta base com um limite maior para a listagem inicial (ex: 100)
         let query = client.from(config.tabela).select('*').limit(100);
-        
-        // 2. De acordo com o tipo de busca, aplica o filtro de descrição 
-        if (termo) {
-            query = query.ilike(config.colDesc, `%${termo}%`);
-        }
+        if (termo) query = query.ilike(config.colDesc, `%${termo}%`);
 
         const data = await dbService.execute(query);
         const tbody = document.getElementById('listaBuscaInsumos');
@@ -460,7 +458,6 @@ window.carregarListaInsumosModal = async function(termo = "") {
             return;
         }
 
-        // 3. Renderiza a tabela
         data.forEach(item => {
             const tr = document.createElement('tr');
             tr.style.cursor = "pointer";
@@ -480,17 +477,8 @@ window.carregarListaInsumosModal = async function(termo = "") {
 
 document.getElementById('txtBuscaInsumo')?.addEventListener('input', function() {
     const termo = this.value.toUpperCase().trim();
-    
-    // Se o usuário apagar o texto todo, recarrega a lista inicial completa
-    if (termo.length === 0) {
-        window.carregarListaInsumosModal("");
-        return;
-    }
-    
-    // Evita pesquisar com apenas 1 letra para não travar o banco
+    if (termo.length === 0) return window.carregarListaInsumosModal("");
     if (termo.length < 2) return;
-
-    // Dispara a busca com o termo digitado
     window.carregarListaInsumosModal(termo);
 });
 
@@ -520,7 +508,6 @@ document.getElementById('btnAdicionarInsumo')?.addEventListener('click', () => {
     };
 
     rascunhoInsumos.push(item);
-
     document.getElementById('txtCodInsumo').value = ""; 
     document.getElementById('txtDescInsumo').value = "";
     document.getElementById('numQtdInsumoLinha').value = "1";
@@ -609,11 +596,14 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         let osOficial;
         const osExistente = await dbService.execute(client.from('Ordens_Servico').select('id').eq('numero_sequencial', numOS).maybeSingle());
 
+        const flagDanoSevero = document.getElementById('chkDanoSevero')?.checked || false;
+
         if (osExistente) {
             osOficial = await dbService.execute(client.from('Ordens_Servico').update({
                 prefixo_veiculo: document.getElementById('txtPrefixo').value,
                 defeito_relatado: document.getElementById('txtDefeito').value,
-                km_atual: parseInt(document.getElementById('numKm').value) || 0
+                km_atual: parseInt(document.getElementById('numKm').value) || 0,
+                is_dano_severo: flagDanoSevero 
             }).eq('id', osExistente.id).select().single());
         } else {
             osOficial = await dbService.execute(client.from('Ordens_Servico').insert([{
@@ -621,7 +611,8 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 prefixo_veiculo: document.getElementById('txtPrefixo').value,
                 defeito_relatado: document.getElementById('txtDefeito').value,
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
-                status: 'ABERTA'
+                status: 'ABERTA',
+                is_dano_severo: flagDanoSevero 
             }]).select().single());
         }
 
@@ -710,8 +701,11 @@ function limparTelaOS() {
     window.idEncaminhamentoAtivo = null;
 
     document.querySelectorAll('input, textarea, select').forEach(campo => {
-        if (campo.type !== 'button' && campo.type !== 'submit') campo.value = '';
+        if (campo.type !== 'button' && campo.type !== 'submit' && campo.type !== 'checkbox') campo.value = '';
     });
+    
+    const chkDano = document.getElementById('chkDanoSevero');
+    if(chkDano) chkDano.checked = false;
 
     const tbody = document.getElementById('corpoHistoricoEnc');
     if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Pesquise ou crie uma O.S para ver o histórico</td></tr>';
@@ -723,48 +717,21 @@ function limparTelaOS() {
         badgeTopo.innerText = 'NOVA';
         badgeTopo.style.backgroundColor = '#64748b'; 
     }
-        if(document.getElementById('txtDataFechamentoEnc')) {
+    if(document.getElementById('txtDataFechamentoEnc')) {
         document.getElementById('txtDataFechamentoEnc').value = "Pendente...";
     }
 }
 
 // =====================================================================
-// 1. EVENTOS DO MODAL DE S.S. PENDENTES
-// =====================================================================
-function configurarEventosModalSS() {
-    const modalSS = document.getElementById('modalSS');
-    const btnFechar = document.getElementById('btnFecharModalSS');
-    
-    // ATENÇÃO: Coloque aqui o ID do botão que a pessoa clica para ABRIR o modal
-    const btnAbrirModal = document.getElementById('btnLupaSSOrigem'); 
-
-    // Fechar o modal
-    if (btnFechar) {
-        btnFechar.addEventListener('click', () => {
-            modalSS.classList.add('hidden');
-        });
-    }
-
-    // Abrir o modal e carregar os dados
-    if (btnAbrirModal) {
-        btnAbrirModal.addEventListener('click', () => {
-            modalSS.classList.remove('hidden');
-            carregarSSPendentesNoModal(); // Chama a função que vai ao banco
-        });
-    }
-}
-
-// =====================================================================
-// 2. BUSCAR AS S.S. NO BANCO (SUPABASE)
+// EVENTOS DO MODAL DE S.S. PENDENTES (E AUTO GERAR O.S)
 // =====================================================================
 async function carregarSSPendentesNoModal() {
-    const tbody = document.getElementById('tabelaSS'); // O ID do seu HTML
+    const tbody = document.getElementById('tabelaSS'); 
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">⏳ A procurar S.S. abertas...</td></tr>';
 
     try {
-        // Busca S.S. com status ABERTA. Ajuste o nome da tabela se necessário.
         const { data, error } = await client
             .from('Solicitacao_Servicos')
             .select('*')
@@ -773,17 +740,15 @@ async function carregarSSPendentesNoModal() {
 
         if (error) throw error;
 
-        tbody.innerHTML = ''; // Limpa o "A procurar..."
+        tbody.innerHTML = ''; 
 
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #6b7280;">Nenhuma S.S. pendente no momento.</td></tr>';
             return;
         }
 
-        // Desenha uma linha para cada S.S. encontrada
         data.forEach(ss => {
             const tr = document.createElement('tr');
-            
             tr.innerHTML = `
                 <td style="text-align: center; font-weight: bold;">${ss.numero_ss || '-'}</td>
                 <td style="text-align: center;">${ss.identificacao_veiculo || '-'}</td>
@@ -796,10 +761,8 @@ async function carregarSSPendentesNoModal() {
                 </td>
             `;
 
-            // O GATILHO: Quando clicar no botão "Importar" DESSA linha
             const btnImportar = tr.querySelector('.btn-importar-linha');
             btnImportar.addEventListener('click', () => importarDadosDaSSParaOS(ss));
-
             tbody.appendChild(tr);
         });
 
@@ -809,56 +772,199 @@ async function carregarSSPendentesNoModal() {
     }
 }
 
-// =====================================================================
-// 3. TRANSFERIR OS DADOS PARA A TELA 
-// =====================================================================
+async function importarDadosDaSSParaOS(ss) {
+    console.log("📥 Iniciando transferência da S.S para O.S. Dados:", ss);
 
-function importarDadosDaSSParaOS(ss) {
-    console.log("📥 Iniciando transferência da S.S para O.S. Dados recebidos:", ss);
-
-    // 1. Campo: NÚMERO DA S.S.
-    // Verifique no seu HTML da O.S. qual é o ID exato desta caixinha!
+    // PREENCHIMENTO DOS CAMPOS
     const txtNumSS = document.getElementById('txtNumSS'); 
-    if (txtNumSS) {
-        txtNumSS.value = ss.numero_ss || '';
-        console.log("✅ Campo Número S.S. preenchido!");
-    } else {
-        console.error("❌ HTML ID não encontrado: 'txtNumSS'");
-    }
+    if (txtNumSS) txtNumSS.value = ss.numero_ss || '';
 
-    // 2. Campo: PREFIXO DO VEÍCULO
     const txtPrefixo = document.getElementById('txtPrefixo'); 
     if (txtPrefixo) {
         txtPrefixo.value = ss.identificacao_veiculo || '';
         txtPrefixo.dispatchEvent(new Event('blur'));
-        console.log("✅ Campo Prefixo preenchido!");
-        
-    } else {
-        console.error("❌ HTML ID não encontrado: 'txtPrefixo'");
     }
 
     const cboTipoServico = document.getElementById('cboTipoServico'); 
-    if (cboTipoServico) {
-        // A MÁGICA ACONTECE AQUI: usamos .value em vez de .select
-        cboTipoServico.value = ss.servico || ''; 
-        
-        console.log(`✅ Campo Tipo de Serviço preenchido com: ${ss.servico}`);
-    } else {
-        console.error("❌ HTML ID não encontrado: 'cboTipoServico'");
-    }
+    if (cboTipoServico) cboTipoServico.value = ss.servico || ''; 
 
-    // 3. Campo: DEFEITO RELATADO
     const txtDefeito = document.getElementById('txtDefeito'); 
-    if (txtDefeito) {
-        txtDefeito.value = ss.defeito_relatado || '';
-        console.log("✅ Campo Defeito preenchido!");
-    } else {
-        console.error("❌ HTML ID não encontrado: 'txtDefeito'");
+    if (txtDefeito) txtDefeito.value = ss.defeito_relatado || '';
+
+    // ========================================================
+    // 🔥 NOVO: GERA O NÚMERO DA O.S AUTOMATICAMENTE
+    // ========================================================
+    try {
+        const dataOS = await dbService.execute(client.from('Ordens_Servico').select('numero_sequencial').order('numero_sequencial', { ascending: false }).limit(1));
+        let proximoOS = (dataOS && dataOS.length > 0) ? dataOS[0].numero_sequencial + 1 : 1;
+        const formatadoOS = String(proximoOS).padStart(6, '0');
+        
+        const campoNumOS = document.getElementById('txtNumOS');
+        if(campoNumOS) campoNumOS.value = formatadoOS;
+        
+        const lblResumo = document.getElementById('lblResumoOS');
+        if(lblResumo) lblResumo.innerText = formatadoOS;
+        
+        aplicarStatusVisual("ABERTA");
+        atualizarTextoBotaoOS(false);
+        console.log("✅ O.S Auto-gerada:", formatadoOS);
+    } catch (err) {
+        console.error("Erro ao gerar OS automática na importação:", err);
     }
 
-    // 4. Fechar o Modal
     const modal = document.getElementById('modalSS');
-    if (modal) {
-        modal.classList.add('hidden');
+    if (modal) modal.classList.add('hidden');
+}
+
+
+// =====================================================================
+// 7. NOVOS MODAIS: ETAPAS E FORNECEDORES
+// =====================================================================
+
+function configurarEventosModalEtapas() {
+    const btnLupa = document.getElementById('btnLupaEtapa'); // O ID da Lupa na tela
+    const modal = document.getElementById('modalEtapas');
+    const btnFechar = document.getElementById('btnFecharModalEtapas');
+    const inputBusca = document.getElementById('txtBuscaEtapaModal');
+
+    if (btnLupa) {
+        btnLupa.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            inputBusca.value = '';
+            inputBusca.focus();
+            carregarEtapasNoModal('');
+        });
+    }
+
+    if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
+
+    if (inputBusca) {
+        inputBusca.addEventListener('input', (e) => {
+            const termo = e.target.value.trim();
+            if (termo.length === 0 || termo.length >= 2) carregarEtapasNoModal(termo);
+        });
+    }
+}
+
+async function carregarEtapasNoModal(termo) {
+    const tbody = document.getElementById('listaBuscaEtapasModal');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
+
+    try {
+        // Usa a tabela Apoio_Etapas que já existe no seu Supabase
+        let query = client.from('Apoio_Etapas').select('*').limit(50);
+        if (termo) query = query.ilike('descricao', `%${termo}%`);
+
+        const data = await dbService.execute(query);
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Nenhuma etapa encontrada.</td></tr>`;
+            return;
+        }
+
+        data.forEach(etapa => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = "pointer";
+            
+            // Puxa as colunas com os nomes que já vimos que você usa
+            tr.innerHTML = `<td>${etapa.codigo_etapa || '-'}</td><td>${etapa.descricao || '-'}</td>`;
+            
+            tr.onclick = function() {
+                // Injeta o código e já injeta a descrição na tela também!
+                const campoCod = document.getElementById('txtCodEtapa'); 
+                const campoDesc = document.getElementById('txtDescricaoEtapa'); 
+                
+                if(campoCod) campoCod.value = etapa.codigo_etapa; 
+                if(campoDesc) campoDesc.value = etapa.descricao;
+                
+                document.getElementById('modalEtapas').classList.add('hidden');
+            };
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("Erro na busca de etapas:", err);
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
+    }
+}
+
+function configurarEventosModalFornecedores() {
+    const btnLupa = document.getElementById('btnLupaFornecedor'); // O ID da lupa na tela
+    const modal = document.getElementById('modalFornecedores');
+    const btnFechar = document.getElementById('btnFecharModalFornecedores');
+    const inputBusca = document.getElementById('txtBuscaFornecedorModal');
+
+    if (btnLupa) {
+        btnLupa.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            inputBusca.value = '';
+            inputBusca.focus();
+            carregarFornecedoresNoModal('');
+        });
+    }
+
+    if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
+
+    if (inputBusca) {
+        inputBusca.addEventListener('input', (e) => {
+            const termo = e.target.value.trim();
+            if (termo.length === 0 || termo.length >= 2) carregarFornecedoresNoModal(termo);
+        });
+    }
+}
+
+async function carregarFornecedoresNoModal(termo) {
+    const tbody = document.getElementById('listaBuscaFornecedoresModal');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
+
+    try {
+        // 1. Trazemos todos os fornecedores ordenados pelo Nome Fantasia
+        let query = client.from('Fornecedores')
+                          .select('*')
+                          .order('nfantasia', { ascending: true }); 
+
+        // 2. Se o usuário digitar algo, pesquisa pelo Nome Fantasia
+        if (termo) {
+            query = query.ilike('nfantasia', `%${termo}%`);
+        }
+
+        const data = await dbService.execute(query);
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Nenhum fornecedor encontrado.</td></tr>`;
+            return;
+        }
+
+        // 3. Desenha a tabela com todos os dados usando os nomes EXATOS do seu banco
+        data.forEach(forn => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = "pointer";
+            
+            // Efeito visual maroto ao passar o mouse
+            tr.onmouseover = () => tr.style.backgroundColor = "#f1f5f9";
+            tr.onmouseout = () => tr.style.backgroundColor = "transparent";
+
+            // Monta as variáveis lendo as suas colunas (cnpj_cpf, codigo_fornecedor e nfantasia)
+            const identificacao = forn.cnpj_cpf || forn.codigo_fornecedor || '-';
+            const nomeFornecedor = forn.nfantasia || '-';
+
+            tr.innerHTML = `<td>${identificacao}</td><td>${nomeFornecedor}</td>`;
+            
+            tr.onclick = function() {
+                const campoFornecedor = document.getElementById('txtCodFornecedor'); 
+                
+                // Salva o CNPJ (ou código) lá no input da O.S.
+                if(campoFornecedor) campoFornecedor.value = forn.codigo_fornecedor; 
+                
+                document.getElementById('modalFornecedores').classList.add('hidden');
+            };
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("Erro na busca de fornecedores:", err);
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
     }
 }

@@ -80,7 +80,7 @@ txtMatricula.addEventListener('blur', async function() {
     lblNome.innerText = "🔍 Buscando...";
     
     // 1. Busca Funcionário
-    const { data: func } = await client.from('Funcionarios').select('*').eq('matricula', matriculaValor).single();
+    const { data: func } = await client.from('FuncionariosBRT').select('*').eq('matricula', matriculaValor).single();
     
     if (!func) {
         lblNome.innerText = "❌ Colaborador Não encontrado";

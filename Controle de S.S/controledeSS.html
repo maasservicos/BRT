@@ -19,9 +19,7 @@
                 <div class="btn-header-direito">
                     <a href="../index.html" class="btn-link-os">Ir para Ordem de Serviço &rarr;</a>
                 </div>
-                 <div class="btn-header-direito">
-                    <a href="../Ocorrência BRT/HTML/form.html" class="btn-link-os">Ir para Ocorrência &rarr;</a>
-                </div>
+            
             </div>
         </header>
         
@@ -30,7 +28,7 @@
             <section class="card">
                 <h1>1° Informações do Veículo</h1>
                 <div class="grid">
-                    <div class="form-group">
+                    <div class="col-3">
                         <label for="txtstatusSS">Status da S.S</label>
                         <input type="text" id="txtstatusSS" readonly class="readonly-field" style="font-weight: bold;">
                     </div>
@@ -39,6 +37,7 @@
                         <div class="inline">
                             <input id="txtNumSS" type="text" placeholder="Nº da S.S" />
                             <button id="btnNovaSS" type="button" class="btn-success btn-small" title="Nova S.S">+</button>
+                            <button type="button" id="btnVerOcorrencia" class="btn-ocorrencia" title="Ocorrências Pendentes">📋</button>
                         </div>
                     </div>
 
@@ -116,8 +115,8 @@
                         <label class="req" for="cboLocalizao">Locais Constantes</label>
                             <select id="cboLocaisSS">
                                 <option value="">Selecione</option>
-                                <option value="GaragemBRT">Garagem - BRT</option>
-                                <option value="GaragemMaas">Garagem - Maas</option>
+                                <option value="Garagem-Maas">Garagem - Maas</option>
+                                <option value="Garagem-BRT">Garagem - BRT</option>
                                 <option value="Outros">Outros...</option>
                             </select>
                     </div>
@@ -147,11 +146,7 @@
                         </div>
                     </div>
 
-                    <div class="col-6" >
-                                <label class="btn-toggle-large" id="lblDanoSevero">
-                                    <input type="checkbox" id="chkDanoSevero" style="width:20px; height:20px; cursor: pointer;">
-                                    🚨 Dano Severo
-                                </label>
+                    <div class="col-6" >                       
                                 <label class="btn-toggle-large" id="lblServicoRapido">
                                     <input type="checkbox" id="chkServicoRapido" style="width:20px; height:20px; cursor: pointer;">
                                     ⏱️ Serviço Rápido
@@ -234,6 +229,33 @@
                     </thead>
                     <tbody id="tabelaResultadosVeiculos">
                         <tr><td colspan="4" style="text-align: center;">Digite para pesquisar...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalOcorrenciaPendentes" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;"> <header class="modal-header">
+            <h2>Ocorrências Pendentes (Triagem)</h2>
+            <button id="btnFecharModalOcorrencia" class="btn-close">&times;</button>
+        </header>
+        
+        <div class="modal-body">
+            <div class="table-container">
+                <table class="table-maas">
+                    <thead>
+                        <tr>
+                            <th>Nº O.C.</th>
+                            <th>Prefixo</th>
+                            <th>Data</th>
+                            <th>Defeito Relatado</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaOcorrenciaPendentes">
+                        <tr><td colspan="5" style="text-align: center;">Carregando ocorrências...</td></tr>
                     </tbody>
                 </table>
             </div>

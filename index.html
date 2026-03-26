@@ -59,6 +59,14 @@
                             <label for="txtDataFechamento">Data/Hora Fechamento</label>
                             <input id="txtDataFechamento" type="text" class="readonly-field" readonly />
                         </div>
+                        <div class="col-3">
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                                <input type="checkbox" id="chkDanoSevero" name="chkDanoSevero" class="custom-checkbox">
+                                <label for="chkDanoSevero" style="font-weight: bold; color: #ef4444;">
+                                    <i class="fas fa-exclamation-triangle"></i> Dano Severo
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -164,12 +172,16 @@
                         </div>
                         <div class="col-3">
                             <label for="txtCodEtapa">Etapa</label>
-                            <input id="txtCodEtapa" type="text" disabled placeholder="Ex: T40001" />
+                            <div style="display: flex; gap: 4px; width: 100%;">
+                                <input id="txtCodEtapa" type="text" disabled placeholder="Ex: T40001" style="flex: 1;" />
+                                <button type="button" id="btnLupaEtapa" class="btn-ghost btn-icon" disabled title="Pesquisar Etapa">🔍</button>
+                            </div>
                         </div>
-                        <div class="col-3">
+                                    <div class="col-3">
                             <label for="txtDescricaoEtapa">Descrição da Etapa</label>
                             <input type="text" id="txtDescricaoEtapa" class="readonly-field" readonly>
                         </div>
+
                         <div class="col-3">
                             <label for="cboOficinaExterna">Serviço Externo?</label>
                             <select id="cboOficinaExterna" disabled onchange="document.getElementById('divDanfe').classList.toggle('hidden', this.value === 'nao')">
@@ -179,7 +191,10 @@
                         </div>
                         <div class="col-3">
                             <label for="txtCodFornecedor">Cód. Fornecedor</label>
-                            <input id="txtCodFornecedor" type="text" disabled placeholder="CNPJ (8 dígitos) " readonly disabled />
+                            <div style="display: flex; gap: 4px; width: 100%;">
+                                <input id="txtCodFornecedor" type="text" disabled placeholder="CNPJ ou Cód..." style="flex: 1;" />
+                                <button type="button" id="btnLupaFornecedor" class="btn-ghost btn-icon" disabled title="Pesquisar Fornecedor">🔍</button>
+                            </div>
                         </div>
                         <div class="col-3">
                             <label for="txtDataEncaminhamento">Data/Hora do Envio</label>
@@ -192,6 +207,9 @@
                         <div class="col-6">
                             <label class="req" for="txtDefeitoEncaminhamento">Observações do Encaminhamento:</label>
                             <textarea id="txtDefeitoEncaminhamento" placeholder="Detalhes técnicos deste envio..." disabled></textarea>
+                        </div>
+                        <div class="col-3">
+                            
                         </div>
                     </div>
                 </section>
@@ -344,6 +362,59 @@
             </div>
         </div>
     </div>
+    <div id="modalEtapas" class="modal-overlay hidden">
+    <div class="modal-content">
+        <header class="modal-header">
+            <h2>Pesquisar Etapa</h2>
+            <button id="btnFecharModalEtapas" class="btn-close">&times;</button>
+        </header>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="text" id="txtBuscaEtapaModal" placeholder="Digite a descrição da etapa...">
+            </div>
+            <div class="table-container mt-15">
+                <table class="table-maas">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaBuscaEtapasModal">
+                        <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalFornecedores" class="modal-overlay hidden">
+    <div class="modal-content">
+        <header class="modal-header">
+            <h2>Pesquisar Fornecedor</h2>
+            <button id="btnFecharModalFornecedores" class="btn-close">&times;</button>
+        </header>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="text" id="txtBuscaFornecedorModal" placeholder="Digite o nome ou CNPJ...">
+            </div>
+            <div class="table-container mt-15">
+                <table class="table-maas">
+                    <thead>
+                        <tr>
+                            <th>Cód/CNPJ</th>
+                            <th>Nome do Fornecedor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaBuscaFornecedoresModal">
+                        <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script type="module" src="Controle de O.S/ordemdeservico.js"></script>
 </body>

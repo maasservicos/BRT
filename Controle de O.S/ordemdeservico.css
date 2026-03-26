@@ -205,6 +205,68 @@ textarea {
     font-family: var(--font);
 }
 
+/* =========================================================
+   ESTILO DO CHECKBOX CUSTOMIZADO (DANO SEVERO)
+   ========================================================= */
+
+/* Alinhamento perfeito do grupo (caixinha + texto) */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espaço entre a caixa e o texto */
+    margin-top: 10px;
+}
+
+/* 1. Esconde o quadrado padrão feio do navegador */
+.custom-checkbox {
+    appearance: none; /* Tira o estilo nativo */
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #cbd5e1; /* Borda cinza suave */
+    border-radius: 6px; /* Cantos arredondados modernos */
+    background-color: #ffffff;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    margin: 0; /* Remove margens padrão */
+}
+
+/* 2. Efeito ao passar o mouse por cima (Hover) */
+.custom-checkbox:hover {
+    border-color: #ef4444; /* Borda fica vermelha para chamar atenção */
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); /* Brilho vermelho de fundo */
+}
+
+/* 3. O que acontece quando ele é MARCADO (Checked) */
+.custom-checkbox:checked {
+    background-color: #ef4444; /* Fundo preenche de vermelho */
+    border-color: #ef4444;
+}
+
+/* 4. Desenhando o "Visto" (Check) com CSS puro por cima da caixa vermelha */
+.custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 7px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg); /* Gira a linha para virar um "V" */
+}
+
+/* 5. Estilo do Label (Texto) para ser clicável junto com a caixa */
+.checkbox-group label {
+    cursor: pointer; /* O mouse vira 'mãozinha' também no texto */
+    user-select: none; /* Evita que o texto fique azul se o mecânico clicar rápido duas vezes */
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Espaço entre o ícone do triângulo e o texto */
+}
+
 textarea {
     min-height: 80px;
     resize: vertical;

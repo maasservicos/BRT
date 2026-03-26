@@ -34,21 +34,25 @@
                 
                 <div class="row">
                     <div class="col">
+                        <label>Status da Ocorrência</label>
+                        <div class="input-group readonly-group">
+                            <input type="text" id="txtStatusOcorrencia" value="Pendente" readonly class="readonly-field" style="font-weight: bold; color: #eab308;">
+                        </div>
                         <label><span class="required">*</span> Nº da Ocorrência</label>
                         <div class="input-group">
-                            <input type="text" placeholder="Nº da O.C">
-                            <button type="button" class="action-btn green-btn"><i class="fas fa-plus"></i></button>
+                            <input type="text" id="txtNumOcorrencia" placeholder="Nº da O.C">
+                            <button type="button" id="btnNovaOcorrencia" class="action-btn green-btn"><i class="fas fa-plus"></i></button>
                         </div>
                                 
                         <label><span class="required">*</span> Prefixo / Placa</label>
                         <div class="input-group">
-                            <input type="text" placeholder="Prefixo / Placa do Veículo">
-                            <button type="button" class="action-btn green-btn"><i class="fas fa-search"></i></button>
+                            <input type="text" id="txtPrefixoOcorrencia" placeholder="Prefixo / Placa do Veículo">
+                            <button type="button" id="btnBuscaPrefixoOcorrencia" class="action-btn green-btn"><i class="fas fa-search"></i></button>
                         </div>
 
                         <label><span class="required">*</span> Km do Veículo</label>
                         <div class="input-group">
-                            <input type="text" placeholder="Km Atual">
+                            <input type="text" id="txtKmAtualOcorrencia" placeholder="Km Atual">
                             <span class="icon-passive"><i class="fas fa-tachometer-alt"></i></span>
                         </div>
                     </div>
@@ -56,14 +60,19 @@
                     <div class="col">
                         <label>Abertura</label>
                         <div class="input-group readonly-group">
-                            <input type="text" placeholder="DD/MM/AAAA" readonly class="readonly-field">
+                            <input type="text" id="txtDataAberturaOcorrencia" placeholder="DD/MM/AAAA" readonly class="readonly-field" tabindex="-1">
                             <span class="icon-passive"><i class="far fa-calendar-alt"></i></span>
                         </div>
                       
                         <label>Nome do Bem</label>
                         <div class="input-group readonly-group">
-                            <input type="text" value="Nome do Bem" readonly class="readonly-field">
+                            <input type="text" id="txtNomeBemOcorrencia" placeholder="Nome do Bem" readonly class="readonly-field"tabindex="-1">
                             <span class="icon-passive"><i class="fas fa-bus"></i></span>
+                        </div>
+                         <label>Contato</label>
+                        <div class="input-group readonly-group">
+                            <input type="text" id="txtContatoOcorrencia" placeholder="Informe o Contato">
+                            <span class="icon-passive"><i class="fas fa-mobile"></i></span>
                         </div>
                     </div>
                 </div>
@@ -74,34 +83,65 @@
                 
                 <div class="row">
                     <div class="col">
-                        <label><span class="required">*</span> Locais Constantes</label>
+                        <label class="req" for="cboLocais"><span class="required">*</span> Locais Constantes</label>
                         <div class="input-group select-group">
-                            <select>
+                            <select id="cboLocaisConstantes">
                                 <option value="">Selecione</option>
                                 <option value="Garagem-Maas">Garagem - Maas</option>
                                 <option value="Garagem-BRT">Garagem - BRT</option>
+                                <option value="Outros">Outros...</option>
                             </select>
                             <span class="action-btn green-btn small-arrow"><i class="fas fa-chevron-down"></i></span>
                         </div>
-                        <textarea placeholder="Descrição do Local do Veículo ..." class="mt-15"></textarea>
+                        <textarea id="txtDescricaoLocal" placeholder="Descrição do Local do Veículo ..." class="mt-15"></textarea>
                     </div>
                     
                     <div class="col">
-                        <label><span class="required">*</span> Defeito Relatado</label>
-                        <textarea placeholder="Descrição do Problema do Veículo ..." class="h-full"></textarea>
+                        <label for="txtDescricaoDefeitoOcorrencia"><span class="required">*</span> Defeito Relatado</label>
+                        <textarea id="txtDefeitoRelatadoOcorrencia" placeholder="Descrição do Problema do Veículo ..." class="h-full"></textarea>
                     </div>
                 </div>
             </div>
 
             <div class="btn-submit-container">
                 <button type="submit" class="btn-submit">Salvar 📋</button>
-                
             </div>
-<div class="btn-header-direito">
-                    <a href="../../index.html" class="btn-link-os">Ir para Ordem de Serviço&rarr;</a>
-                </div>
+                
         </form>
     </div>
 
+            <div id="modalBuscaVeiculo" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h2>Pesquisar Veículo</h2>
+                    <button id="btnFecharModalVeiculo" class="btn-close">&times;</button>
+                </header>
+                
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="txtPesquisaModalVeiculo">Placa ou Prefixo:</label>
+                        <input type="text" id="txtPesquisaModalVeiculo" placeholder="Ex: BRT1234 ou 1024">
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table-maas">
+                            <thead>
+                                <tr>
+                                    <th style="margin-bottom: 1px;">Prefixo</th>
+                                    <th>Placa</th>
+                                    <th>Modelo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaResultadosVeiculos">
+                                <tr><td colspan="4" style="text-align: center;">Digite para pesquisar...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="module" src="../JS/form.js"></script>
+        <script type="module" src="../JS/supabaseClient.js">Su</script>
 </body>
 </html>

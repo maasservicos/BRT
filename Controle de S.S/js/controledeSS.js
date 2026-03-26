@@ -1,4 +1,4 @@
-    import { client } from './supabaseClient.js';
+import { client } from './supabaseClient.js';
 
 /* ==========================================================================
    0. CAMADA DE SERVIÇO (DATABASE REPOSITORY)
@@ -755,6 +755,22 @@ async function processarSalvamento(statusSS) {
         console.log("Pacote pronto para envio:", pacoteSS);
 
         // Se pesquisámos a S.S. antes, a memória 'editando' estará verdadeira!
+        if (estadoSS.idOcorrenciaOrigem) {
+            console.log(`Avisando a Ocorrência ${estadoSS.idOcorrenciaOrigem} que a S.S foi gerada...`);
+            
+            const { error: erroOcorrencia } = await client
+                .from('Ocorrencia') // ATENÇÃO: Verifique se o nome da tabela é esse mesmo
+                .update({ status: 'Em Andamento' })
+                .eq('num_ocorrencia', estadoSS.idOcorrenciaOrigem); // ATENÇÃO: Verifique o nome da coluna de ID da ocorrência
+
+            if (erroOcorrencia) {
+                console.error("Falha ao mudar status da ocorrência:", erroOcorrencia);
+                // Não travamos a tela por isso, mas deixamos registrado no log
+            } else {
+                console.log("✅ Ocorrência atualizada para 'Em Andamento'!");
+            }
+        }
+        
         if (estadoSS.editando) {
             console.log("A atualizar S.S. existente no banco...");
             
@@ -787,4 +803,130 @@ async function processarSalvamento(statusSS) {
         btnClicado.innerText = textoOriginal;
         btnClicado.disabled = false;
     }
+}
+
+// Captura os elementos do Modal de Ocorrências
+const btnVerOcorrencia = document.getElementById('btnVerOcorrencia');
+const modalOcorrencia = document.getElementById('modalOcorrenciaPendentes');
+const btnFecharModalOcorrencia = document.getElementById('btnFecharModalOcorrencia');
+
+// 1. Abrir Modal e Buscar Dados
+if(btnVerOcorrencia) {
+    btnVerOcorrencia.addEventListener('click', () => {
+        modalOcorrencia.style.display = 'flex';
+        buscarOcorrenciaPendentes();
+    });
+}
+
+// 2. Fechar Modal
+if(btnFecharModalOcorrencia) {
+    btnFecharModalOcorrencia.addEventListener('click', () => {
+        modalOcorrencia.style.display = 'none';
+    });
+}
+
+// 3. Função que vai no Supabase buscar as pendências
+async function buscarOcorrenciaPendentes() {
+    const tbody = document.getElementById('tabelaOcorrenciaPendentes');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">⏳ Buscando ocorrências...</td></tr>';
+
+    try {
+        // Busca na tabela de ocorrências APENAS as Pendentes
+        const { data, error } = await client
+            .from('Ocorrencia')
+            .select('*')
+            .eq('status', 'Pendente') // O filtro mágico
+            .order('data_abertura', { ascending: false }); // As mais recentes primeiro
+
+        if (error) throw error;
+
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhuma ocorrência pendente no momento. 🎉</td></tr>';
+            return;
+        }
+
+        // Desenha a tabela
+        data.forEach(oc => {
+            const tr = document.createElement('tr');
+            
+            // Formata a data para ficar legível
+            const dataFormatada = new Date(oc.data_abertura).toLocaleDateString('pt-BR');
+            
+            // Corta o texto do defeito se for muito grande para não quebrar a tabela
+            const defeitoCurto = oc.defeito_relatado.length > 40 ? oc.defeito_relatado.substring(0, 40) + '...' : oc.defeito_relatado;
+
+            tr.innerHTML = `
+                <td><strong>${oc.num_ocorrencia || oc.num_ocorrencia}</strong></td>
+                <td>${oc.prefixo_veiculo}</td>
+                <td>${dataFormatada}</td>
+                <td title="${oc.defeito_relatado}">${defeitoCurto}</td>
+                <td>
+                    <button class="btn-selecionar-oc" style="cursor: pointer; padding: 4px 8px; background: #22c55e; color: white; border: none; border-radius: 4px;">
+                        Gerar S.S.
+                    </button>
+                </td>
+            `;
+
+            // Adiciona o evento de clique no botão "Gerar S.S." desta linha
+            const btnSelecionar = tr.querySelector('.btn-selecionar-oc');
+            btnSelecionar.addEventListener('click', () => selecionarOcorrenciaParaSS(oc));
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Erro ao buscar ocorrências:", err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Erro ao carregar ocorrências.</td></tr>';
+    }
+}
+
+async function selecionarOcorrenciaParaSS(ocorrencia) {
+    console.log("Transformando Ocorrência em S.S:", ocorrencia);
+
+    // Salva o ID da ocorrência na memória para quando você for salvar a S.S, você criar o vínculo!
+    estadoSS.idOcorrenciaOrigem = ocorrencia.num_ocorrencia || ocorrencia.id_ocorrencia;
+
+    // Mapeamento Inteligente
+    const prefixo = ocorrencia.prefixo_veiculo || ocorrencia.prefixo_placa || '';
+    const km = ocorrencia.km_atual || ocorrencia.km_veiculo || '';
+    const defeito = ocorrencia.defeito_relatado || '';
+    
+    // AQUI ESTAVA O SEGREDO: Puxando o nome da coluna correto da tabela de Ocorrências!
+    const locais = ocorrencia.local_constante || ocorrencia.locais_constantes || '';
+    const descLocais = ocorrencia.descricao_local || ocorrencia.localizacao_veiculo || '';
+
+    // Elementos da tela de S.S. 
+    const inputPlacaSS = document.getElementById('txtPlacaSS');
+    const inputKMSS = document.getElementById('txtKMSS');
+    const inputDescricaoSS = document.getElementById('txtDescricaoSS');
+    const inputLocais = document.getElementById('cboLocaisSS');
+    const inputDescLocal = document.getElementById('txtDescricaoLocalizacaoSS');
+
+    // Injetando os valores
+    if (inputPlacaSS) inputPlacaSS.value = prefixo;
+    if (inputKMSS) inputKMSS.value = km;
+    if (inputDescricaoSS) inputDescricaoSS.value = defeito;
+    if (inputLocais) inputLocais.value = locais;
+    if (inputDescLocal) inputDescLocal.value = descLocais; 
+    
+    // Fecha o modal
+    const modal = document.getElementById('modalOcorrenciaPendentes');
+    if (modal) modal.style.display = 'none';
+    
+    // ==========================================
+    // AS DUAS AUTOMAÇÕES (NOME DO BEM E Nº S.S)
+    // ==========================================
+
+    if (prefixo) {
+        // Busca a descrição do veículo, nome do bem, contrato, etc.
+        await buscarVeiculoDireto(prefixo);
+    }
+
+    if (typeof gerarProximoNumeroSS === "function") {
+        // Gera e preenche o próximo número de S.S na tela
+        await gerarProximoNumeroSS();
+    }
+
+    alert(`Ocorrência Nº ${ocorrencia.num_ocorrencia || ocorrencia.id_ocorrencia} carregada com sucesso!`);
 }
