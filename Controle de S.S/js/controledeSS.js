@@ -8,7 +8,7 @@ const crachaString = localStorage.getItem('maas_usuario_logado');
 function verificarAcessoSS() {
     if (!crachaString) {
         alert("Acesso Negado. Faça o login primeiro.");
-        window.location.href = "../login.html"; 
+        window.location.href = "../index.html"; 
         return false;
     }
 
@@ -16,7 +16,7 @@ function verificarAcessoSS() {
 
     if (usuario.grupo !== 'Maas' || usuario.subgrupo !== 'Operacao') {
         alert(`Acesso Restrito! Seu perfil (${usuario.grupo} - ${usuario.subgrupo || 'Sem Subgrupo'}) não tem permissão para acessar Solicitações de Serviço.`);
-        window.location.href = "../login.html";
+        window.location.href = "../index.html";
         return false;
     }
 
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if(confirm("Deseja realmente sair do sistema?")) {
             localStorage.removeItem('maas_usuario_logado');
-            window.location.href = "../login.html"; 
+            window.location.href = "../index.html"; 
         }
     });
 

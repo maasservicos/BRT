@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if(confirm("Deseja realmente sair do sistema?")) {
             localStorage.removeItem('maas_usuario_logado');
-            window.location.href = "/login.html"; 
+            window.location.href = "/index.html"; 
         }
     });
 
