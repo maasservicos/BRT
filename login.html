@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso ao Sistema - MAAS e BRT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="Acessos/Css/login.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-wrapper">
+                <div class="logo-maas">
+                    <img class="logo-img-maas" src="Acessos/Imagens/Logo Maas.png" alt="Maas Logo">
+                </div>
+                <div class="Linha"></div>
+                <div class="logo-brt">
+                    <img class="logo-img-brt" src="Acessos/Imagens/Logo BRT.png" alt="Brt Logo">
+                </div>
+            </div>
+
+            <div class="header-text">
+                <h1>Entrada de Usuários</h1>
+                <p>Maas – BRT</p>
+            </div>
+        </header>
+
+        <form id="formLogin" onsubmit="return false;">
+            
+            <div class="card">
+                <div class="card-title">Gerenciamento de Acessos</div>
+                
+                <div class="row">
+                    <div class="col">
+                                
+                        <label><span class="required">*</span> Email ou Usuário</label>
+                        <div class="input-group">
+                            <input type="text" id="txtEmail" placeholder="Informe seu Email">
+                            <span class="icon-passive"><i class="fas fa-envelope"></i></span>
+                        </div>
+
+                        <label><span class="required">*</span> Senha </label>
+                        <div class="input-group">
+                            <input type="password" id="txtSenha" placeholder="Informe sua Senha">
+                            <span class="icon-passive"><i class="fas fa-key"></i></span>
+                        </div>
+                        <div class="btn-submit-container">
+                            <button type="submit" id="btnEntrar" class="btn-submit"> Entrar ✔️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <script type="module" src="Acessos/JS/login.js"></script>
+    <script type="modele" src="Acessos/JS/supabaseClient.js"></script>
+</body>
+</html>

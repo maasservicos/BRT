@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abertura de Ocorrências - BRT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../Css/loginformulario.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-wrapper">
+                <div class="logo-maas">
+                    <img class="logo-img-maas" src="../Imagens/Logo Maas.png" alt="Maas Logo">
+                </div>
+                <div class="Linha"></div>
+                <div class="logo-brt">
+                    <img class="logo-img-brt" src="../Imagens/Logo BRT.png" alt="Brt Logo">
+                </div>
+            </div>
+
+            <div class="header-text">
+                <h1>Entrada de Usuários</h1>
+                <p>Maas – BRT</p>
+            </div>
+        </header>
+
+        <form action="#" method="POST">
+            
+            <div class="card">
+                <div class="card-title">Formulários Disponíveis</div>
+                
+                <div class="row">
+                    <div class="col">
+                                
+                        <label>Solicitação de Serviço</label>
+                        <div class="btn-submit-container">
+                        <a href="../../Controle de S.S/controledeSS.html">
+                            <button type="button" class="btn-submit">S.S 📋</button>
+                        </a>
+                        </div>
+
+                        <label>Ordem de Serviço</label>
+                        <div class="btn-submit-container">
+                            <a href="../../index.html">
+                            <button type="button" class="btn-submit">O.S 🛠️</button>
+                        </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+            <div id="modalBuscaVeiculo" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h2>Pesquisar Veículo</h2>
+                    <button id="btnFecharModalVeiculo" class="btn-close">&times;</button>
+                </header>
+                
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="txtPesquisaModalVeiculo">Placa ou Prefixo:</label>
+                        <input type="text" id="txtPesquisaModalVeiculo" placeholder="Ex: BRT1234 ou 1024">
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table-maas">
+                            <thead>
+                                <tr>
+                                    <th style="margin-bottom: 1px;">Prefixo</th>
+                                    <th>Placa</th>
+                                    <th>Modelo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaResultadosVeiculos">
+                                <tr><td colspan="4" style="text-align: center;">Digite para pesquisar...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="module" src="../JS/form.js"></script>
+        <script type="module" src="../JS/supabaseClient.js">Su</script>
+</body>
+</html>

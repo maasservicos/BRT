@@ -1,5 +1,33 @@
 import { client } from './supabaseClient.js';
 
+// =====================================================================
+// 🔒 GUARDA DE ROTA E 👤 DADOS DO USUÁRIO LOGADO (GRUPO BRT)
+// =====================================================================
+const crachaString = localStorage.getItem('maas_usuario_logado');
+
+function verificarAcessoOcorrencia() {
+    if (!crachaString) {
+        alert("Acesso Negado. Faça o login primeiro.");
+        window.location.href = "../login.html"; 
+        return false;
+    }
+
+    const usuario = JSON.parse(crachaString);
+
+    if (usuario.grupo !== 'BRT') {
+        alert(`Acesso Restrito! Seu perfil (${usuario.grupo}) não tem permissão para acessar a Abertura de Ocorrências.`);
+        window.location.href = "../login.html";
+        return false;
+    }
+
+    console.log(`Bem-vindo, ${usuario.nome}! Acesso liberado às Ocorrências.`);
+    return true;
+}
+
+if (!verificarAcessoOcorrencia()) throw new Error("Execução interrompida por falta de permissão.");
+
+const usuarioLogado = JSON.parse(crachaString);
+
 // ============================================================================
 // 1. ESTADO GLOBAL E ELEMENTOS DA TELA
 // ============================================================================
@@ -29,6 +57,18 @@ const txtPesquisaModal = document.getElementById('txtPesquisaModalVeiculo');
 
 // Inicia os eventos quando a página carrega
 document.addEventListener('DOMContentLoaded', () => {
+    // 👤 PREENCHE O NOME NO TOPO E CONFIGURA O LOGOUT
+    const lblNome = document.getElementById('lblNomeUsuario');
+    if (lblNome) lblNome.innerText = `👤 Olá, ${usuarioLogado.nome}`;
+
+    document.getElementById('btnSair')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if(confirm("Deseja realmente sair do sistema?")) {
+            localStorage.removeItem('maas_usuario_logado');
+            window.location.href = "/login.html"; 
+        }
+    });
+
     configurarEventosOcorrencia();
     configurarEventosBuscaVeiculo();
     preencherDataAbertura();
@@ -37,35 +77,29 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // 2. EVENTOS DA TELA PRINCIPAL
 // ============================================================================
-
 async function gerarProximoNumeroOcorrencia() {
     try {
-        // Vai no Supabase, ordena do maior para o menor e pega só o primeiro (o maior ID)
         const { data, error } = await client
-            .from('Ocorrencia') // Nome da sua tabela
-            .select('num_ocorrencia') // Nome da sua coluna de ID
+            .from('Ocorrencia') 
+            .select('num_ocorrencia') 
             .order('num_ocorrencia', { ascending: false })
             .limit(1);
 
         if (error) throw error;
 
-        let proximoId = 1; // Se o banco estiver totalmente vazio, ele começa no 1
+        let proximoId = 1; 
         
         if (data && data.length > 0) {
-            // Pega o último número que achou e soma 1
             proximoId = data[0].num_ocorrencia + 1; 
         }
 
+        // NOVA OCORRÊNCIA SEMPRE NASCE PENDENTE E AMARELA!
         const campoStatus = document.getElementById('txtStatusOcorrencia');
         if (campoStatus) {
-            campoStatus.value = data.status || 'Pendente';
+            campoStatus.value = 'Pendente';
+            campoStatus.style.color = '#eab308'; // Amarelo
+        }
 
-    // Perfumaria de UX: Mudar a cor conforme o status
-        if (data.status === 'Pendente') campoStatus.style.color = '#eab308'; // Amarelo
-        if (data.status === 'Em Andamento') campoStatus.style.color = '#3b82f6'; // Azul
-        if (data.status === 'Finalizada') campoStatus.style.color = '#22c55e'; // Verde
-}
-        // Preenche o campo na tela com o novo número
         txtNumOcorrencia.value = proximoId;
         console.log(`Próximo número gerado: ${proximoId}`);
 
@@ -84,9 +118,9 @@ function configurarEventosOcorrencia() {
 
         try {
             const { data, error } = await client
-                .from('Ocorrencia') // Confirme se o nome da tabela no Supabase é minúsculo
+                .from('Ocorrencia') 
                 .select('*')
-                .eq('num_ocorrencia', idDigitado) // Confirme o nome da coluna de ID
+                .eq('num_ocorrencia', idDigitado) 
                 .single();
 
             if (error) throw error;
@@ -99,13 +133,24 @@ function configurarEventosOcorrencia() {
                 txtDescricaoLocal.value = data.descricao_local || '';
                 txtDefeitoRelatado.value = data.defeito_relatado || '';
                 
-                // Formata e exibe a data que veio do banco
                 if(data.data_abertura) {
                     const dataObj = new Date(data.data_abertura);
                     txtDataAbertura.value = dataObj.toLocaleDateString('pt-BR');
                 }
 
-                // Busca o nome do bem para deixar a tela bonita
+                // ==========================================================
+                // 🚀 AQUI ESTÁ A MÁGICA DA COR AO PESQUISAR UMA ANTIGA!
+                // ==========================================================
+                const campoStatus = document.getElementById('txtStatusOcorrencia');
+                if (campoStatus) {
+                    campoStatus.value = data.status || 'Pendente';
+                    
+                    if (data.status === 'Pendente') campoStatus.style.color = '#eab308'; // Amarelo
+                    if (data.status === 'Em Andamento') campoStatus.style.color = '#3b82f6'; // Azul
+                    if (data.status === 'FECHADA' || data.status === 'Finalizada') campoStatus.style.color = '#22c55e'; // Verde
+                }
+                // ==========================================================
+
                 if (data.prefixo_veiculo) buscarVeiculoDireto(data.prefixo_veiculo);
                 
                 console.log("Ocorrência carregada com sucesso!");
@@ -116,6 +161,8 @@ function configurarEventosOcorrencia() {
             limparTela();
         }
     });
+
+// ... resto do seu código (btnNovaOcorrencia, etc)
 
     // -- Botão [+] para NOVA Ocorrência --
     btnNovaOcorrencia.addEventListener('click', async () => {
@@ -149,7 +196,8 @@ function configurarEventosOcorrencia() {
             descricao_local: txtDescricaoLocal.value,
             defeito_relatado: txtDefeitoRelatado.value,
             data_abertura: new Date().toISOString(), // Grava a data/hora exata do clique
-            status: 'Pendente'
+            status: 'Pendente',
+            usuario_abertura: usuarioLogado.nome // 🚀 NOVO: Usuário Abertura Ocorrência
             
         };
 

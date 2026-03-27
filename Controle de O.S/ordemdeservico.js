@@ -1,7 +1,35 @@
 import { client } from './supabaseClient.js';
 
+// =====================================================================
+// 🔒 GUARDA DE ROTA E 👤 DADOS DO USUÁRIO LOGADO
+// =====================================================================
+const crachaString = localStorage.getItem('maas_usuario_logado');
+
+function verificarAcessoOS() {
+    if (!crachaString) {
+        alert("Acesso Negado. Faça o login primeiro.");
+        window.location.href = "../login.html"; 
+        return false;
+    }
+
+    const usuario = JSON.parse(crachaString);
+
+    if (usuario.grupo !== 'Maas' || usuario.subgrupo !== 'Manutencao') {
+        alert(`Acesso Restrito! Seu perfil (${usuario.grupo} - ${usuario.subgrupo || 'Sem Subgrupo'}) não tem permissão para acessar Ordens de Serviço.`);
+        window.location.href = "../login.html";
+        return false;
+    }
+
+    console.log(`Bem-vindo, ${usuario.nome}! Acesso liberado à O.S.`);
+    return true;
+}
+
+if (!verificarAcessoOS()) throw new Error("Execução interrompida por falta de permissão.");
+
+const usuarioLogado = JSON.parse(crachaString);
+
 /* ==========================================================================
-   0. CAMADA DE SERVIÇO (DATABASE REPOSITORY)
+   0. CAMADA DE SERVIÇO (DATABASE REPOSITORY) E HELPERS GERAIS
    ========================================================================== */
 const dbService = {
     async execute(query) {
@@ -13,6 +41,14 @@ const dbService = {
         return data;
     }
 };
+
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
 /* ==========================================================================
    ESTADOS GLOBAIS E VARIÁVEIS DE CONTROLE
@@ -27,17 +63,30 @@ let rascunhoInsumos = [];
    1. INICIALIZAÇÃO DA PÁGINA
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', function() {
+    // 👤 PREENCHE O NOME NO TOPO E CONFIGURA O LOGOUT
+    const lblNome = document.getElementById('lblNomeUsuario');
+    if (lblNome) lblNome.innerText = `👤 Olá, ${usuarioLogado.nome}`;
+
+    document.getElementById('btnSair')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if(confirm("Deseja realmente sair do sistema?")) {
+            localStorage.removeItem('maas_usuario_logado');
+            window.location.href = "../login.html"; 
+        }
+    });
+
     atualizarDataVisual();
     window.configurarTipo('PRODUTO'); 
 
-    // Espelha o defeito da OS para a observação do encaminhamento
+    const txtLinkDoc = document.getElementById('txtLinkDocumentos');
+    if (txtLinkDoc) txtLinkDoc.disabled = true;
+
     const txtDefeito = document.getElementById('txtDefeito');
     const txtObs = document.getElementById('txtDefeitoEncaminhamento');
     if (txtDefeito && txtObs) {
         txtDefeito.addEventListener('input', () => { txtObs.value = txtDefeito.value; });
     }
 
-    // Comportamento dos Modais Base
     document.getElementById('btnLupaInsumo')?.addEventListener('click', () => {
         document.getElementById('modalInsumos').classList.remove('hidden');
         document.getElementById('txtBuscaInsumo').value = "";
@@ -57,7 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modalSS').classList.add('hidden');
     });
 
-    // INICIA OS NOVOS MODAIS (etapas E FORNECEDORES)
     configurarEventosModalEtapas();
     configurarEventosModalFornecedores();
 });
@@ -85,8 +133,16 @@ function atualizarDataVisual(tipo) {
 
 function aplicarStatusVisual(status) {
     const isFechada = (status === 'FECHADA' || status === 'FINALIZADA');
-    const texto = isFechada ? "FECHADA" : "ABERTA";
-    const cor = isFechada ? "#ef4444" : "#22c55e"; 
+    const isValidacao = (status === 'VALIDACAO'); 
+    
+    let texto = "ABERTA";
+    let cor = "#22c55e"; 
+
+    if (isFechada) {
+        texto = "FECHADA"; cor = "#ef4444"; 
+    } else if (isValidacao) {
+        texto = "EM VALIDAÇÃO"; cor = "#f59e0b"; 
+    }
     
     ['badgeStatusTopo', 'lblStatus'].forEach(id => {
         const el = document.getElementById(id);
@@ -94,7 +150,17 @@ function aplicarStatusVisual(status) {
     });
     
     document.getElementById('btnSalvarOS').disabled = isFechada;
-    document.getElementById('btnFinalizarOS').disabled = isFechada;
+    
+    const btnFin = document.getElementById('btnFinalizarOS');
+    if (btnFin) {
+        btnFin.disabled = isFechada;
+        btnFin.innerHTML = isValidacao ? "✅ Aprovar e Fechar O.S" : "📤 Enviar para Validação";
+    }
+
+    const txtLinkDoc = document.getElementById('txtLinkDocumentos');
+    if (txtLinkDoc) {
+        txtLinkDoc.disabled = !isValidacao; 
+    }
 }
 
 function atualizarTextoBotaoOS(isEdicao) {
@@ -162,13 +228,22 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             document.getElementById('numKm').value = os.km_atual || 0;
             document.getElementById('txtDefeito').value = os.defeito_relatado || "";
             
-            const chkDano = document.getElementById('chkDanoSevero');
-            if(chkDano) chkDano.checked = !!os.is_dano_severo; 
+            const campoLink = document.getElementById('txtLinkDocumentos');
+            if(campoLink) campoLink.value = os.link_documentos || "";
+
+            const campoSS = document.getElementById('txtNumSS');
+            if(campoSS) campoSS.value = os.numero_ss || "";
+
+            const lblResumo = document.getElementById('lblResumoOS');
+            if(lblResumo) lblResumo.innerText = String(os.numero_sequencial).padStart(6, '0');
             
             carregarHistoricoEncaminhamentos();
             liberarCamposEncaminhamento(false);
             aplicarStatusVisual(os.status);
             atualizarTextoBotaoOS(true);
+            
+            window.atualizarResumoCustosOS(os.id);
+
             document.getElementById('txtPrefixo').dispatchEvent(new Event('blur'));
 
             const campoFechamento = document.getElementById('txtDataFechamento');
@@ -205,11 +280,44 @@ document.getElementById('txtPrefixo')?.addEventListener('blur', async function()
 });
 
 /* ==========================================================================
+   NOVA FUNÇÃO: CALCULAR CUSTOS TOTAIS DA O.S
+   ========================================================================== */
+window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0 }) {
+    if (!idOS && extras.pecas === 0 && extras.mo === 0) return;
+
+    try {
+        let pecasBanco = 0;
+        let moBanco = 0;
+
+        if (idOS) {
+            const itens = await dbService.execute(client.from('itens_servico').select('*').eq('os_id', idOS));
+            itens?.forEach(item => {
+                if (item.tipo === 'PRODUTO') pecasBanco += item.total;
+                else moBanco += item.total; 
+            });
+        }
+
+        const totalPecas = pecasBanco + extras.pecas;
+        const totalMO = moBanco + extras.mo;
+        const totalGeral = totalPecas + totalMO;
+
+        const lblPecas = document.getElementById('lblCustoPecas');
+        const lblMO = document.getElementById('lblCustoMO');
+        const lblTotal = document.getElementById('lblCustoTotal');
+
+        if (lblPecas) lblPecas.innerText = `R$ ${totalPecas.toFixed(2)}`;
+        if (lblMO) lblMO.innerText = `R$ ${totalMO.toFixed(2)}`;
+        if (lblTotal) lblTotal.innerText = `R$ ${totalGeral.toFixed(2)}`;
+
+    } catch (err) {
+        console.error("Erro ao atualizar resumo de custos:", err);
+    }
+};
+
+/* ==========================================================================
    4. SEÇÕES 3 E 4: DIAGNÓSTICO E ENCAMINHAMENTOS
    ========================================================================== */
-// 1. FUNÇÃO QUE LIBERA OU BLOQUEIA A TELA DE ENCAMINHAMENTOS
 function liberarCamposEncaminhamento(status) {
-    // Adicionei o '#btnLupaEtapa' na lista para ele destravar junto com a tela
     const seletores = [
         '#cboTarefaEncaminhamento', '#txtCodEtapa', '#btnLupaEtapa', '#cboOficinaExterna', 
         '#txtDataEncaminhamento', '#txtDefeitoEncaminhamento', '#txtCodInsumo', 
@@ -221,21 +329,18 @@ function liberarCamposEncaminhamento(status) {
         if (el) el.disabled = !status;
     });
 
-    // 2. Regra Exclusiva para o Fornecedor e sua Lupa
     const campoFornecedor = document.getElementById('txtCodFornecedor');
     const cboExterna = document.getElementById('cboOficinaExterna');
-    const btnLupaForn = document.getElementById('btnLupaFornecedor'); // <-- Capturamos a Lupa
+    const btnLupaForn = document.getElementById('btnLupaFornecedor'); 
     
     if (campoFornecedor && cboExterna) {
         if (!status) {
-            // Tela bloqueada = Campo e Lupa bloqueados
             campoFornecedor.disabled = true;
             if (btnLupaForn) btnLupaForn.disabled = true;
         } else {
-            // Tela liberada = Verifica se é serviço externo para liberar o fornecedor
             const isExterno = (cboExterna.value === 'sim');
             campoFornecedor.disabled = !isExterno;
-            if (btnLupaForn) btnLupaForn.disabled = !isExterno; // Lupa segue a mesma regra!
+            if (btnLupaForn) btnLupaForn.disabled = !isExterno; 
         }
     }
 }
@@ -258,17 +363,15 @@ document.getElementById('btnNovoEncaminhamento')?.addEventListener('click', func
 
 document.getElementById('cboOficinaExterna')?.addEventListener('change', function() {
     const campoFornecedor = document.getElementById('txtCodFornecedor');
-    const btnLupaForn = document.getElementById('btnLupaFornecedor'); // <-- Capturamos a Lupa
+    const btnLupaForn = document.getElementById('btnLupaFornecedor'); 
 
     if (!campoFornecedor) return;
 
     if (this.value === 'sim') {
-        // Se for Sim, libera os dois
         campoFornecedor.disabled = false;
         if (btnLupaForn) btnLupaForn.disabled = false;
         campoFornecedor.focus(); 
     } else {
-        // Se for Não, bloqueia os dois e limpa o texto
         campoFornecedor.disabled = true;
         if (btnLupaForn) btnLupaForn.disabled = true;
         campoFornecedor.value = ""; 
@@ -295,7 +398,7 @@ document.getElementById('txtCodEtapa')?.addEventListener('blur', async function(
 document.getElementById('btnSalvarEncaminhamento')?.addEventListener('click', async function() {
     if (!window.idOSGlobal) return alert("⚠️ Salve a O.S. principal antes de adicionar encaminhamentos.");
 
-    const tarefa = document.getElementById('cboTarefaEncaminhamento').value; // Adapte caso tenha mudado o ID da tarefa para input
+    const tarefa = document.getElementById('cboTarefaEncaminhamento').value; 
     const etapa = document.getElementById('txtCodEtapa').value;
     const descricao = document.getElementById('txtDefeitoEncaminhamento').value; 
     const servicoExterno = document.getElementById('cboOficinaExterna').value === 'sim';
@@ -553,8 +656,15 @@ window.removerDoRascunho = (index) => {
 };
 
 function atualizarResumoFinanceiroLocal() {
-    const totalRascunho = rascunhoInsumos.reduce((acc, i) => acc + i.total, 0);
-    document.getElementById('lblCustoTotal').innerText = `R$ ${totalRascunho.toFixed(2)}`;
+    let rascunhoPecas = 0;
+    let rascunhoMO = 0;
+
+    rascunhoInsumos.forEach(item => {
+        if (item.tipo === 'PRODUTO') rascunhoPecas += item.total;
+        else rascunhoMO += item.total;
+    });
+
+    window.atualizarResumoCustosOS(window.idOSGlobal, { pecas: rascunhoPecas, mo: rascunhoMO });
 }
 
 async function carregarInsumosDoEncaminhamento(idEnc) {
@@ -596,14 +706,16 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         let osOficial;
         const osExistente = await dbService.execute(client.from('Ordens_Servico').select('id').eq('numero_sequencial', numOS).maybeSingle());
 
-        const flagDanoSevero = document.getElementById('chkDanoSevero')?.checked || false;
+        const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
+        const numSS = document.getElementById('txtNumSS')?.value || null; 
 
         if (osExistente) {
             osOficial = await dbService.execute(client.from('Ordens_Servico').update({
                 prefixo_veiculo: document.getElementById('txtPrefixo').value,
                 defeito_relatado: document.getElementById('txtDefeito').value,
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
-                is_dano_severo: flagDanoSevero 
+                link_documentos: linkDoc,
+                numero_ss: numSS 
             }).eq('id', osExistente.id).select().single());
         } else {
             osOficial = await dbService.execute(client.from('Ordens_Servico').insert([{
@@ -612,7 +724,9 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 defeito_relatado: document.getElementById('txtDefeito').value,
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
                 status: 'ABERTA',
-                is_dano_severo: flagDanoSevero 
+                link_documentos: linkDoc,
+                numero_ss: numSS,
+                usuario_abertura: usuarioLogado.nome // 🚀 USUÁRIO ABERTURA AQUI
             }]).select().single());
         }
 
@@ -653,6 +767,13 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
             await dbService.execute(client.from('itens_servico').insert(insumosOficiais));
         }
 
+        if (numSS) {
+            console.log(`Atualizando S.S. ${numSS} para EM ANDAMENTO...`);
+            await dbService.execute(client.from('Solicitacao_Servicos')
+                .update({ status_ss: 'EM ANDAMENTO' }) 
+                .eq('numero_ss', numSS));
+        }
+
         alert("✅ O.S, Encaminhamento e Insumos oficializados com sucesso!");
         
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -676,19 +797,59 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
 
         if (pendentes && pendentes.length > 0) {
             const listaPendentes = pendentes.map(p => p.numero_encaminhamento).join(", ");
-            return alert(`⚠️ Bloqueio de Processo: Existem encaminhamentos pendentes (${listaPendentes}).\nEncerre todos os encaminhamentos antes de finalizar a O.S.`);
+            return alert(`⚠️ Bloqueio de Processo: Existem encaminhamentos pendentes (${listaPendentes}).\nEncerre todos os encaminhamentos antes de avançar.`);
         }
 
-        if (!confirm("Todos os encaminhamentos estão concluídos. Deseja fechar definitivamente a O.S " + num + "?")) return;
+        const statusAtual = document.getElementById('badgeStatusTopo')?.innerText;
+        const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
 
-        const dataAgora = new Date();
+        let novoStatus = "";
+        let mensagem = "";
+
+        if (statusAtual === "EM VALIDAÇÃO") {
+            if (!confirm(`A O.S ${num} já foi auditada? Deseja FECHAR definitivamente e baixar a S.S/Ocorrência?`)) return;
+            novoStatus = "FECHADA";
+            mensagem = "✅ O.S Fechada com sucesso! S.S e Ocorrência também foram baixadas.";
+        } else {
+            if (!confirm(`Deseja enviar a O.S ${num} para a etapa de VALIDAÇÃO?`)) return;
+            novoStatus = "VALIDACAO";
+            mensagem = "⏳ O.S enviada para Validação!";
+        }
+
+        const payload = { 
+            status: novoStatus, 
+            link_documentos: linkDoc 
+        };
         
-        await dbService.execute(client.from('Ordens_Servico').update({ 
-            status: 'FECHADA', data_fechamento: dataAgora.toISOString() 
-        }).eq('id', idOS));
+        if (novoStatus === "FECHADA") {
+            payload.data_fechamento = new Date().toISOString();
+            payload.usuario_fechamento = usuarioLogado.nome; // 🚀 USUÁRIO FECHAMENTO AQUI
+        }
 
-        atualizarDataVisual('fechamento');
-        alert("✅ O.S Fechada com sucesso!");
+        await dbService.execute(client.from('Ordens_Servico').update(payload).eq('id', idOS));
+
+        if (novoStatus === "FECHADA") {
+            const numSS = document.getElementById('txtNumSS')?.value;
+            const prefixo = document.getElementById('txtPrefixo')?.value;
+
+            if (numSS) {
+                console.log(`Baixando a S.S. ${numSS} para FECHADA...`);
+                await dbService.execute(client.from('Solicitacao_Servicos')
+                    .update({ status_ss: 'FECHADA' }) 
+                    .eq('numero_ss', numSS));
+            }
+
+            if (prefixo) {
+                console.log(`Baixando ocorrências 'Em Andamento' do veículo ${prefixo}...`);
+                await dbService.execute(client.from('Ocorrencia') 
+                    .update({ status: 'FECHADA' }) 
+                    .eq('prefixo_veiculo', prefixo)
+                    .eq('status', 'Em Andamento')); 
+            }
+        }
+
+        if (novoStatus === "FECHADA") atualizarDataVisual('fechamento');
+        alert(mensagem);
         window.location.reload(); 
 
     } catch (err) {
@@ -704,8 +865,8 @@ function limparTelaOS() {
         if (campo.type !== 'button' && campo.type !== 'submit' && campo.type !== 'checkbox') campo.value = '';
     });
     
-    const chkDano = document.getElementById('chkDanoSevero');
-    if(chkDano) chkDano.checked = false;
+    const txtLinkDoc = document.getElementById('txtLinkDocumentos');
+    if (txtLinkDoc) txtLinkDoc.disabled = true;
 
     const tbody = document.getElementById('corpoHistoricoEnc');
     if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Pesquise ou crie uma O.S para ver o histórico</td></tr>';
@@ -720,6 +881,8 @@ function limparTelaOS() {
     if(document.getElementById('txtDataFechamentoEnc')) {
         document.getElementById('txtDataFechamentoEnc').value = "Pendente...";
     }
+    
+    window.atualizarResumoCustosOS(null, { pecas: 0, mo: 0 });
 }
 
 // =====================================================================
@@ -773,11 +936,12 @@ async function carregarSSPendentesNoModal() {
 }
 
 async function importarDadosDaSSParaOS(ss) {
-    console.log("📥 Iniciando transferência da S.S para O.S. Dados:", ss);
+    console.log("📥 DADOS REAIS QUE VIERAM DO SUPABASE:", ss);
 
-    // PREENCHIMENTO DOS CAMPOS
     const txtNumSS = document.getElementById('txtNumSS'); 
-    if (txtNumSS) txtNumSS.value = ss.numero_ss || '';
+    if (txtNumSS) {
+        txtNumSS.value = ss.numero_ss || ss.id || ss.num_ss || 'ERRO DE COLUNA';
+    }
 
     const txtPrefixo = document.getElementById('txtPrefixo'); 
     if (txtPrefixo) {
@@ -791,9 +955,6 @@ async function importarDadosDaSSParaOS(ss) {
     const txtDefeito = document.getElementById('txtDefeito'); 
     if (txtDefeito) txtDefeito.value = ss.defeito_relatado || '';
 
-    // ========================================================
-    // 🔥 NOVO: GERA O NÚMERO DA O.S AUTOMATICAMENTE
-    // ========================================================
     try {
         const dataOS = await dbService.execute(client.from('Ordens_Servico').select('numero_sequencial').order('numero_sequencial', { ascending: false }).limit(1));
         let proximoOS = (dataOS && dataOS.length > 0) ? dataOS[0].numero_sequencial + 1 : 1;
@@ -816,13 +977,12 @@ async function importarDadosDaSSParaOS(ss) {
     if (modal) modal.classList.add('hidden');
 }
 
-
 // =====================================================================
-// 7. NOVOS MODAIS: ETAPAS E FORNECEDORES
+// 7. NOVOS MODAIS: ETAPAS E FORNECEDORES (COM DEBOUNCE APLICADO)
 // =====================================================================
 
 function configurarEventosModalEtapas() {
-    const btnLupa = document.getElementById('btnLupaEtapa'); // O ID da Lupa na tela
+    const btnLupa = document.getElementById('btnLupaEtapa'); 
     const modal = document.getElementById('modalEtapas');
     const btnFechar = document.getElementById('btnFecharModalEtapas');
     const inputBusca = document.getElementById('txtBuscaEtapaModal');
@@ -839,10 +999,12 @@ function configurarEventosModalEtapas() {
     if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
 
     if (inputBusca) {
-        inputBusca.addEventListener('input', (e) => {
+        const debouncedBusca = debounce((e) => {
             const termo = e.target.value.trim();
             if (termo.length === 0 || termo.length >= 2) carregarEtapasNoModal(termo);
-        });
+        }, 400); 
+        
+        inputBusca.addEventListener('input', debouncedBusca);
     }
 }
 
@@ -852,7 +1014,6 @@ async function carregarEtapasNoModal(termo) {
     tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
 
     try {
-        // Usa a tabela Apoio_Etapas que já existe no seu Supabase
         let query = client.from('Apoio_Etapas').select('*').limit(50);
         if (termo) query = query.ilike('descricao', `%${termo}%`);
 
@@ -868,11 +1029,9 @@ async function carregarEtapasNoModal(termo) {
             const tr = document.createElement('tr');
             tr.style.cursor = "pointer";
             
-            // Puxa as colunas com os nomes que já vimos que você usa
             tr.innerHTML = `<td>${etapa.codigo_etapa || '-'}</td><td>${etapa.descricao || '-'}</td>`;
             
             tr.onclick = function() {
-                // Injeta o código e já injeta a descrição na tela também!
                 const campoCod = document.getElementById('txtCodEtapa'); 
                 const campoDesc = document.getElementById('txtDescricaoEtapa'); 
                 
@@ -890,7 +1049,7 @@ async function carregarEtapasNoModal(termo) {
 }
 
 function configurarEventosModalFornecedores() {
-    const btnLupa = document.getElementById('btnLupaFornecedor'); // O ID da lupa na tela
+    const btnLupa = document.getElementById('btnLupaFornecedor'); 
     const modal = document.getElementById('modalFornecedores');
     const btnFechar = document.getElementById('btnFecharModalFornecedores');
     const inputBusca = document.getElementById('txtBuscaFornecedorModal');
@@ -907,10 +1066,12 @@ function configurarEventosModalFornecedores() {
     if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
 
     if (inputBusca) {
-        inputBusca.addEventListener('input', (e) => {
+        const debouncedBuscaForn = debounce((e) => {
             const termo = e.target.value.trim();
             if (termo.length === 0 || termo.length >= 2) carregarFornecedoresNoModal(termo);
-        });
+        }, 400); 
+        
+        inputBusca.addEventListener('input', debouncedBuscaForn);
     }
 }
 
@@ -920,12 +1081,10 @@ async function carregarFornecedoresNoModal(termo) {
     tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
 
     try {
-        // 1. Trazemos todos os fornecedores ordenados pelo Nome Fantasia
         let query = client.from('Fornecedores')
                           .select('*')
                           .order('nfantasia', { ascending: true }); 
 
-        // 2. Se o usuário digitar algo, pesquisa pelo Nome Fantasia
         if (termo) {
             query = query.ilike('nfantasia', `%${termo}%`);
         }
@@ -938,16 +1097,13 @@ async function carregarFornecedoresNoModal(termo) {
             return;
         }
 
-        // 3. Desenha a tabela com todos os dados usando os nomes EXATOS do seu banco
         data.forEach(forn => {
             const tr = document.createElement('tr');
             tr.style.cursor = "pointer";
             
-            // Efeito visual maroto ao passar o mouse
             tr.onmouseover = () => tr.style.backgroundColor = "#f1f5f9";
             tr.onmouseout = () => tr.style.backgroundColor = "transparent";
 
-            // Monta as variáveis lendo as suas colunas (cnpj_cpf, codigo_fornecedor e nfantasia)
             const identificacao = forn.cnpj_cpf || forn.codigo_fornecedor || '-';
             const nomeFornecedor = forn.nfantasia || '-';
 
@@ -956,7 +1112,6 @@ async function carregarFornecedoresNoModal(termo) {
             tr.onclick = function() {
                 const campoFornecedor = document.getElementById('txtCodFornecedor'); 
                 
-                // Salva o CNPJ (ou código) lá no input da O.S.
                 if(campoFornecedor) campoFornecedor.value = forn.codigo_fornecedor; 
                 
                 document.getElementById('modalFornecedores').classList.add('hidden');

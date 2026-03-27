@@ -23,14 +23,15 @@ header {
     align-items: center;
     justify-content: center;
     gap: 30px;
-    margin-bottom: 30px;
-    flex-wrap: wrap; /* Permite quebrar linha se não houver espaço */
+    margin-bottom: 100px;
+    flex-wrap: wrap; 
     text-align: center;
+    margin-top: 40px
 }
 
 .Linha {
     border-left: 2px solid #55b98f;
-    height: 50px; /* Reduzi de 100px para alinhar melhor com as logos */
+    height: 50px; 
     margin: 0 20px;
 }
 .logo-wrapper {
@@ -83,7 +84,6 @@ header {
 header p {
     font-size: 14px;
     color: #666;
-    margin-bottom: 10px;
 }
 
 /* Estilização dos Cards */
@@ -106,7 +106,6 @@ header p {
 /* Grid de Colunas */
 .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 30px;
 }
 
@@ -207,7 +206,7 @@ textarea:focus {
 .input-group {
     display: flex;
     align-items: center;
-    background: #ffffff;
+    background: #e0e0e0;
     border-radius: 50px;
     margin-bottom: 15px;
     border: none; /* Removemos a borda divisória leve */
@@ -318,7 +317,7 @@ textarea:focus {
 /* Ajuste para alinhar ícones dentro do input-group */
 .icon-passive {
     padding-right: 15px;
-    color: #ccc;
+    color: #55b98f;
     font-size: 18px;
     display: flex;
     align-items: center;

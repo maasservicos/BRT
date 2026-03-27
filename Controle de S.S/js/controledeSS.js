@@ -1,5 +1,33 @@
 import { client } from './supabaseClient.js';
 
+// =====================================================================
+// 🔒 GUARDA DE ROTA E 👤 DADOS DO USUÁRIO LOGADO (MAAS/OPERACAO)
+// =====================================================================
+const crachaString = localStorage.getItem('maas_usuario_logado');
+
+function verificarAcessoSS() {
+    if (!crachaString) {
+        alert("Acesso Negado. Faça o login primeiro.");
+        window.location.href = "../login.html"; 
+        return false;
+    }
+
+    const usuario = JSON.parse(crachaString);
+
+    if (usuario.grupo !== 'Maas' || usuario.subgrupo !== 'Operacao') {
+        alert(`Acesso Restrito! Seu perfil (${usuario.grupo} - ${usuario.subgrupo || 'Sem Subgrupo'}) não tem permissão para acessar Solicitações de Serviço.`);
+        window.location.href = "../login.html";
+        return false;
+    }
+
+    console.log(`Bem-vindo, ${usuario.nome}! Acesso liberado à S.S.`);
+    return true;
+}
+
+if (!verificarAcessoSS()) throw new Error("Execução interrompida por falta de permissão.");
+
+const usuarioLogado = JSON.parse(crachaString);
+
 /* ==========================================================================
    0. CAMADA DE SERVIÇO (DATABASE REPOSITORY)
    Centraliza e trata todos os erros de banco de dados em um só lugar.
@@ -43,6 +71,18 @@ let estadoSS = {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Tela de S.S carregada. Iniciando Sistema ...");
     
+    // 👤 PREENCHE O NOME NO TOPO E CONFIGURA O LOGOUT
+    const lblNome = document.getElementById('lblNomeUsuario');
+    if (lblNome) lblNome.innerText = `👤 Olá, ${usuarioLogado.nome}`;
+
+    document.getElementById('btnSair')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if(confirm("Deseja realmente sair do sistema?")) {
+            localStorage.removeItem('maas_usuario_logado');
+            window.location.href = "../login.html"; 
+        }
+    });
+
     preencherDataAbertura();
     configurarEventosNumeroSS();
     configurarEventosBuscaVeiculo();
@@ -732,9 +772,11 @@ async function processarSalvamento(statusSS) {
 
     if(!estadoSS.editando) {
         pacoteSS.data_abertura = momentoAtual;
+        pacoteSS.usuario_abertura = usuarioLogado.nome; // 🚀 NOVO: Usuário Abertura
     }
     if (statusSS === 'FINALIZADA') {
         pacoteSS.data_fechamento = momentoAtual;
+        pacoteSS.usuario_fechamento = usuarioLogado.nome; // 🚀 NOVO: Usuário Fechamento
     }
     if (statusSS === 'FINALIZADA') {
         const campoFechamento = document.getElementById('txtFechamentoSS');
@@ -770,7 +812,6 @@ async function processarSalvamento(statusSS) {
                 console.log("✅ Ocorrência atualizada para 'Em Andamento'!");
             }
         }
-        
         if (estadoSS.editando) {
             console.log("A atualizar S.S. existente no banco...");
             
