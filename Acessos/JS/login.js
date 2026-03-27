@@ -42,7 +42,7 @@ document.getElementById('btnEntrar')?.addEventListener('click', async function(e
         } 
         else if (usuario.grupo === 'Maas') {
             if (usuario.subgrupo === 'Manutencao') {
-                window.location.href = "/Controle de O.S/index.html"; 
+                window.location.href = "/Controle de O.S/ordemdeservico.html"; 
             } 
             else if (usuario.subgrupo === 'Operacao') {
                 // Ajuste aqui para a pasta correta da S.S.
