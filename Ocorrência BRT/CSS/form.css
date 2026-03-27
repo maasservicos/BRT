@@ -1,4 +1,6 @@
-/* Configurações Gerais */
+/* ==========================================================================
+   1. CONFIGURAÇÕES GERAIS E LAYOUT (STICKY FOOTER)
+   ========================================================================== */
 * {
     margin: 0;
     padding: 0;
@@ -7,39 +9,48 @@
 }
 
 body {
-    background-color: #d1d5db; /* Fundo cinza para destacar os cards brancos */
+    background-color: #d1d5db; /* Fundo cinza de destaque */
     color: #444;
-    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .container {
     max-width: 1000px;
     margin: 0 auto;
+    width: 100%;
+    flex: 1; /* Empurra o footer para o fim da tela */
+    padding: 20px;
 }
 
-/* Header */
+/* ==========================================================================
+   2. CABEÇALHO (HEADER)
+   ========================================================================== */
 header {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 30px;
     margin-bottom: 30px;
-    flex-wrap: wrap; /* Permite quebrar linha se não houver espaço */
+    flex-wrap: wrap;
     text-align: center;
 }
 
-.Linha {
-    border-left: 2px solid #55b98f;
-    height: 50px; /* Reduzi de 100px para alinhar melhor com as logos */
-    margin: 0 20px;
-}
 .logo-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.logo-maas{
+.Linha {
+    border-left: 2px solid #55b98f;
+    height: 50px;
+    margin: 0 20px;
+}
+
+.logo-maas, 
+.logo-brt {
     width: 5rem;
     height: 2.5rem;
     border-radius: 0.25rem;
@@ -51,23 +62,7 @@ header {
     font-size: 1.25rem;
 }
 
-.logo-img-maas {
-    height: 100%;
-    object-fit: cover;
-}
-
-.logo-brt{
-    width: 5rem;
-    height: 2.5rem;
-    border-radius: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    font-weight: bold;
-    font-size: 1.25rem;
-}
-
+.logo-img-maas, 
 .logo-img-brt {
     height: 100%;
     object-fit: cover;
@@ -86,7 +81,9 @@ header p {
     margin-bottom: 10px;
 }
 
-/* Estilização dos Cards */
+/* ==========================================================================
+   3. CARDS E GRID DE LAYOUT
+   ========================================================================== */
 .card {
     background: #fff;
     border-radius: 25px;
@@ -103,7 +100,6 @@ header p {
     color: #222;
 }
 
-/* Grid de Colunas */
 .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -115,7 +111,9 @@ header p {
     flex-direction: column;
 }
 
-/* Labels e Inputs */
+/* ==========================================================================
+   4. ELEMENTOS DE FORMULÁRIO (INPUTS, LABELS, TEXTAREA)
+   ========================================================================== */
 label {
     font-size: 14px;
     font-weight: 600;
@@ -127,62 +125,27 @@ label {
     color: #ff4d4d;
 }
 
-/* Efeito de Sombra Interna (O que você pediu) */
-input[type="text"] {
-    width: 100%;
-    padding: 12px 15px;
-    border-radius: 50px; /* Estilo pill */
-    border: 1px solid #f0f0f0;
-    background-color: #fff;
-    box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.08); /* Sombra interna */
-    outline: none;
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 15px;
-}
-
-input[type="date"] {
-    width: 100%;
-    padding: 12px 15px;
-    border-radius: 50px; /* Estilo pill */
-    border: 1px solid #f0f0f0;
-    background-color: #fff;
-    box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.08); /* Sombra interna */
-    outline: none;
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 15px;
-}
-
-.readonly-field {
-    cursor: not-allowed;
-}
-
-/*select {
-    width: 100%;
-    padding: 12px 15px;
-    border-radius: 50px; /* Estilo pill 
-    border: 1px solid #f0f0f0;
-    background-color: #fff;
-    box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.08); /* Sombra interna 
-    outline: none;
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 15px;
-}*/
-
+/* Estilo Pill com Sombra Interna Profunda */
+input[type="text"],
+input[type="date"],
+textarea,
+.input-group,
 .select-group {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    border-radius: 50px;
-    overflow: hidden;
-    border: none;
-    /* Sombra interna única e profunda */
     box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 
-
+input[type="text"],
+input[type="date"] {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 50px;
+    border: 1px solid #f0f0f0;
+    background-color: #fff;
+    outline: none;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 15px;
+}
 
 textarea {
     width: 100%;
@@ -192,10 +155,8 @@ textarea {
     padding: 15px 25px;
     font-size: 14px;
     color: #444;
-    border-radius: 20px; /* Arredondado, mas menos que o input pill */
-    /* Sombra interna idêntica ao input-group */
-    box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.12);
-    resize: none; /* Trava o tamanho para não quebrar o layout */
+    border-radius: 20px;
+    resize: none;
     transition: box-shadow 0.3s ease;
 }
 
@@ -203,29 +164,24 @@ textarea:focus {
     box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
-/* Grupos de Input com Botão */
-.input-group {
+/* Grupos de Input e Select */
+.input-group,
+.select-group {
     display: flex;
     align-items: center;
     background: #ffffff;
     border-radius: 50px;
     margin-bottom: 15px;
-    border: none; /* Removemos a borda divisória leve */
-    overflow: hidden; /* Mantém o botão dentro do arredondamento */
-    
-    /* Uma sombra interna mais forte e centrada para dar profundidade uniforme */
-    box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.12); 
-    
+    overflow: hidden;
     transition: box-shadow 0.3s ease;
 }
 
 .input-group input {
-    /* Limpando o input completamente */
-    box-shadow: none !important; /* Força a remoção de sombras anteriores */
+    box-shadow: none !important;
     margin-bottom: 0 !important;
-    border: none; /* Sem bordas no input */
+    border: none;
     flex: 1;
-    background-color: transparent; /* Deixa o fundo do container pai aparecer */
+    background-color: transparent;
     padding: 15px 25px;
     font-size: 14px;
     color: #444;
@@ -235,28 +191,27 @@ textarea:focus {
     box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.18), 0 0 5px rgba(102, 211, 165, 0.4);
 }
 
-/* Botões laterais (+ e Lupa) */
-.action-btn {
+.select-group select {
+    flex: 1;
+    padding: 12px 25px;
+    background: transparent;
     border: none;
-    width: 60px; /* Um pouco mais largo para ocupar o espaço */
-    height: 50px; /* Ajuste para preencher a altura */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    font-size: 14px;
+    color: #555;
     cursor: pointer;
-    font-size: 22px;
-    transition: background 0.3s;
-    
-    /* O botão agora é a extremidade da sombra */
-    margin-right: -1px; /* Tira qualquer borda residual à direita */
 }
 
-.add-btn:hover {
-    background-color: #55b98f;
-}
+/* Estilos de Readonly */
+.readonly-field { cursor: not-allowed; }
+.readonly-group { background-color: #f9f9f9; }
+.readonly-group input { color: #999; }
 
-/* Botão de Enviar */
+/* ==========================================================================
+   5. BOTÕES E ÍCONES
+   ========================================================================== */
 .btn-submit-container {
     text-align: center;
     margin-top: 10px;
@@ -275,47 +230,34 @@ textarea:focus {
     transition: transform 0.2s;
 }
 
-.btn-submit:hover {
-    transform: scale(1.05);
+.btn-submit:hover { transform: scale(1.05); }
+
+.action-btn {
+    border: none;
+    width: 60px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    font-size: 22px;
+    transition: background 0.3s;
 }
 
-/* Responsividade para Celulares */
-@media (max-width: 768px) {
-    .row {
-        grid-template-columns: 1fr;
-    }
-    
-   header {
-        flex-direction: column; /* No mobile, empilha os grupos (logos em cima, texto embaixo) */
-        gap: 15px;
-    }
-
-    .logo-wrapper {
-        width: 100%; /* Garante que o grupo de logos ocupe a largura toda e centralize */
-    }
-
-    .Linha {
-        height: 40px; /* Um pouco menor no mobile */
-    }
-
-      .modal-content {
-        width: 95%;
-        max-height: 90vh;
-    }
-
-    .modal-body {
-        padding: 15px;
-    }
-
-    /* Permite que a tabela arraste para o lado no celular se for muito larga */
-    .modal-body {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
+.green-btn, .add-btn, .small-arrow {
+    background-color: #66d3a5;
+    box-shadow: inset 1px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Ajuste para alinhar ícones dentro do input-group */
+.add-btn:hover { background-color: #55b98f; }
+
+.small-arrow {
+    width: 45px;
+    height: 48px;
+    pointer-events: none;
+}
+
 .icon-passive {
     padding-right: 15px;
     color: #ccc;
@@ -324,172 +266,9 @@ textarea:focus {
     align-items: center;
 }
 
-.action-btn {
-    border: none;
-    width: 55px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-/* Estilos Específicos para o Botão Verde */
-.green-btn {
-    background-color: #66d3a5;
-    /* Adicionamos uma sombra leve no próprio botão para que ele 
-       pareça "sair" do campo com profundidade */
-    box-shadow: inset 1px 2px 4px rgba(0, 0, 0, 0.1); 
-}
-
-/* Deixar o Select com a seta customizada */
-.select-group select {
-    flex: 1;
-    padding: 12px 25px;
-    background: transparent; /* Remove o fundo branco do select */
-    border: none;
-    outline: none;
-    appearance: none; /* Remove a seta padrão do navegador */
-    -webkit-appearance: none;
-    font-size: 14px;
-    color: #555;
-    cursor: pointer;
-}
-
-.small-arrow {
-    width: 45px;
-    height: 48px;
-    background-color: #66d3a5;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none; /* O clique atravessa para o select */
-    box-shadow: inset 1px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.h-full {
-    height: calc(100% - 30px); /* Ajuste para preencher a coluna respeitando o label */
-    min-height: 150px;
-}
-
-.mt-15 { margin-top: 15px; }
-
-/* Estilo para campos Readonly (Somente leitura) */
-.readonly-group {
-    background-color: #f9f9f9;
-}
-.readonly-group input {
-    color: #999;
-}
-
-.col {
-    display: flex;
-    flex-direction: column;
-}
-
-/* ========================================== */
-/* MODAL DE BUSCA DE VEICULOS     */
-/* ========================================== */
-
-/* 1. O fundo escuro que cobre o site inteiro */
-.modal-overlay {
-    position: fixed; 
-    top: 0;
-    left: 0;
-    width: 100vw; 
-    height: 100vh; 
-    background-color: rgba(0, 0, 0, 0.6); 
-    z-index: 9999;
-    
-    /* Centralização com Flexbox */
-    display: none; 
-    justify-content: center; 
-    align-items: center; 
-}
-
-/* 2. A caixa branca flutuante (O Modal em si) */
-.modal-content {
-    background-color: var(--bg-maas);
-    width: 90%; 
-    max-width: 650px;
-    max-height: 90vh;
-    border-radius: 8px; 
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); 
-    
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-/* 3. O Cabeçalho do Modal (Onde fica o título e o botão X) */
-.modal-header {
-    display: flex;
-    justify-content: space-between; 
-    align-items: center;
-    padding: 15px 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px 8px 0 0;
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 1.2rem;
-    color: #2c3e50;
-}
-
-/* O botão de fechar (X) */
-.btn-close {
-    background: none;
-    border: none;
-    font-size: 1.8rem;
-    line-height: 1;
-    cursor: pointer;
-    color: #666;
-    transition: color 0.2s;
-}
-
-.btn-close:hover {
-    color: #e53e3e;
-}
-
-/* 4. O Corpo do Modal (Onde estão a pesquisa e a tabela) */
-.modal-body {
-    padding: 9px;
-    overflow-y: auto; 
-}
-
-/* 5. Estética do campo de pesquisa interno */
-.modal-body .input-group {
-    margin-bottom: 15px;
-}
-
-.modal-body .input-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
-}
-
-td {
-    padding-right: 20px;
-    padding-top: 2px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--header-maas);
-
-}
-
-
-/* ===================================================================== */
-/* MODAL DE SINTOMAS - ESTRUTURA E OVERLAY                               */
-/* ===================================================================== */
-
-/* O fundo escuro que bloqueia a tela de trás */
+/* ==========================================================================
+   6. MODAIS E TABELAS
+   ========================================================================== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -498,25 +277,84 @@ td {
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.65);
     z-index: 9999;
-    
-    /* Centraliza a caixa branca na tela */
-    display: flex; 
+    display: none;
     justify-content: center;
     align-items: center;
 }
 
-/* A classe de controle (O interruptor de luz) */
-.modal-overlay.hidden {
-    display: none !important; 
-}
-
-/* A caixa principal do modal */
 .modal-content {
     background-color: #ffffff;
-    width: 95%;
+    width: 90%;
+    max-width: 650px;
+    max-height: 90vh;
     border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-    overflow: hidden; /* Garante que o header escuro não vaze pelos cantos arredondados */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    padding: 15px;
+    overflow-y: auto;
+}
+
+td {
+    padding: 5px 20px 5px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* ==========================================================================
+   7. RODAPÉ (FOOTER TRAVADO) E CLASSES AUXILIARES
+   ========================================================================== */
+footer {
+    text-align: center;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background-color: #f9fafb;
+    width: 100%;
+    margin-top: auto; /* Garante o encaixe no fim com Flexbox */
+}
+
+.mt-15 { margin-top: 15px; }
+.hidden { display: none !important; }
+
+/* ==========================================================================
+   8. RESPONSIVIDADE
+   ========================================================================== */
+@media (max-width: 768px) {
+    .row { grid-template-columns: 1fr; }
+    
+    header { flex-direction: column; gap: 15px; }
+    
+    .logo-wrapper { width: 100%; }
+
+    .Linha { height: 40px; }
+
+    .modal-content { width: 95%; }
+
+    .modal-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
