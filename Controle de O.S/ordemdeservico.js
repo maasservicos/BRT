@@ -227,6 +227,9 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             document.getElementById('txtPrefixo').value = os.prefixo_veiculo || "";
             document.getElementById('numKm').value = os.km_atual || 0;
             document.getElementById('txtDefeito').value = os.defeito_relatado || "";
+
+            const chkDano = document.getElementById('chkDanoSevero');
+            if (chkDano) chkDano.checked = (os.is_dano_severo === true);
             
             const campoLink = document.getElementById('txtLinkDocumentos');
             if(campoLink) campoLink.value = os.link_documentos || "";
@@ -694,7 +697,8 @@ window.vincularSS = function(numero, prefixo, defeito) {
 document.getElementById('btnSalvarOS')?.addEventListener('click', async function() {
     const btn = this;
     if (btn.disabled) return;
-    if (!window.idEncaminhamentoAtivo) return alert("Inicie ou selecione um encaminhamento para salvar!");
+    
+    // ❌ A TRAVA DO ENCAMINHAMENTO FOI REMOVIDA DAQUI!
     
     try {
         btn.disabled = true;
@@ -708,14 +712,19 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
 
         const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
         const numSS = document.getElementById('txtNumSS')?.value || null; 
+        
+        // 🚀 LÊ A CAIXINHA DO DANO SEVERO
+        const danoSevero = document.getElementById('chkDanoSevero')?.checked || false;
 
+        // 1. SALVA OU ATUALIZA A O.S. PRINCIPAL
         if (osExistente) {
             osOficial = await dbService.execute(client.from('Ordens_Servico').update({
                 prefixo_veiculo: document.getElementById('txtPrefixo').value,
                 defeito_relatado: document.getElementById('txtDefeito').value,
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
                 link_documentos: linkDoc,
-                numero_ss: numSS 
+                numero_ss: numSS,
+                is_dano_severo: danoSevero // 🚀 SALVA NO UPDATE
             }).eq('id', osExistente.id).select().single());
         } else {
             osOficial = await dbService.execute(client.from('Ordens_Servico').insert([{
@@ -726,47 +735,52 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 status: 'ABERTA',
                 link_documentos: linkDoc,
                 numero_ss: numSS,
-                usuario_abertura: usuarioLogado.nome // 🚀 USUÁRIO ABERTURA AQUI
+                usuario_abertura: usuarioLogado.nome,
+                is_dano_severo: danoSevero // 🚀 SALVA NO INSERT
             }]).select().single());
         }
 
         window.idOSGlobal = osOficial.id;
 
-        let idEncaminhamentoFinal;
-        const dadosEnc = { 
-            id_os: window.idOSGlobal,
-            tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
-            codigo_etapa: document.getElementById('txtCodEtapa').value, 
-            encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
-            cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
-            servico_externo: document.getElementById('cboOficinaExterna').value === 'sim'
-        };
+        // 2. SÓ TENTA SALVAR ENCAMINHAMENTO SE O MECÂNICO DEIXOU ELE ABERTO NA TELA
+        if (window.idEncaminhamentoAtivo) {
+            let idEncaminhamentoFinal;
+            const dadosEnc = { 
+                id_os: window.idOSGlobal,
+                tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
+                codigo_etapa: document.getElementById('txtCodEtapa').value, 
+                encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
+                cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
+                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim'
+            };
 
-        const idAtivo = String(window.idEncaminhamentoAtivo);
-        const ehRascunho = idAtivo.startsWith("TEMP") || idAtivo.startsWith("RASCUNHO") || !idAtivo;
+            const idAtivo = String(window.idEncaminhamentoAtivo);
+            const ehRascunho = idAtivo.startsWith("TEMP") || idAtivo.startsWith("RASCUNHO");
 
-        if (ehRascunho) {
-            const novoEnc = await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]).select().single());
-            idEncaminhamentoFinal = novoEnc.id;
-        } else {
-            await dbService.execute(client.from('OS_Encaminhamentos').update(dadosEnc).eq('id', window.idEncaminhamentoAtivo));
-            idEncaminhamentoFinal = window.idEncaminhamentoAtivo;
+            if (ehRascunho) {
+                const novoEnc = await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]).select().single());
+                idEncaminhamentoFinal = novoEnc.id;
+            } else {
+                await dbService.execute(client.from('OS_Encaminhamentos').update(dadosEnc).eq('id', window.idEncaminhamentoAtivo));
+                idEncaminhamentoFinal = window.idEncaminhamentoAtivo;
+            }
+
+            if (typeof rascunhoInsumos !== 'undefined' && rascunhoInsumos.length > 0) {
+                const insumosOficiais = rascunhoInsumos.map(item => ({
+                    os_id: window.idOSGlobal,
+                    id_encaminhamento: idEncaminhamentoFinal,
+                    tipo: item.tipo,
+                    codigo: item.codigo,
+                    descricao: item.descricao,
+                    quantidade: item.quantidade,
+                    valor_unitario: item.valor_unitario,
+                    total: item.total
+                }));
+                await dbService.execute(client.from('itens_servico').insert(insumosOficiais));
+            }
         }
 
-        if (typeof rascunhoInsumos !== 'undefined' && rascunhoInsumos.length > 0) {
-            const insumosOficiais = rascunhoInsumos.map(item => ({
-                os_id: window.idOSGlobal,
-                id_encaminhamento: idEncaminhamentoFinal,
-                tipo: item.tipo,
-                codigo: item.codigo,
-                descricao: item.descricao,
-                quantidade: item.quantidade,
-                valor_unitario: item.valor_unitario,
-                total: item.total
-            }));
-            await dbService.execute(client.from('itens_servico').insert(insumosOficiais));
-        }
-
+        // 3. EFEITO CASCATA NA S.S.
         if (numSS) {
             console.log(`Atualizando S.S. ${numSS} para EM ANDAMENTO...`);
             await dbService.execute(client.from('Solicitacao_Servicos')
@@ -774,7 +788,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 .eq('numero_ss', numSS));
         }
 
-        alert("✅ O.S, Encaminhamento e Insumos oficializados com sucesso!");
+        alert("✅ O.S atualizada com sucesso!");
         
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setTimeout(() => { window.location.reload(); }, 800);
@@ -782,7 +796,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
     } catch (err) {
         alert("Erro ao oficializar dados: " + err.message);
         btn.disabled = false;
-        btn.innerHTML = "💾 Salvar O.S";
+        btn.innerHTML = "💾 Atualizar O.S";
     } 
 });
 
