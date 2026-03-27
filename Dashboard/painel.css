@@ -1,0 +1,191 @@
+/* ==========================================================================
+   1. ESTRUTURA BASE E FOOTER TRAVADO
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #d1d5db; /* Fundo cinza padrão */
+    color: #444;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1; /* Empurra o footer para baixo */
+    padding: 20px;
+}
+
+/* ==========================================================================
+   2. CABEÇALHO (LOGOS PADRONIZADAS)
+   ========================================================================== */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.logo-maas, .logo-brt {
+    width: 4rem; /* Reduzido conforme solicitado */
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-img-maas, .logo-img-brt {
+    height: 100%;
+    object-fit: contain;
+}
+
+.Linha {
+    border-left: 2px solid #55b98f;
+    height: 35px;
+    margin: 0 20px;
+}
+
+header h1 {
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: #334155;
+}
+
+header p { font-size: 13px; color: #64748b; }
+
+.btn-sair-link {
+    color: #ef4444;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   3. CARDS E KPIs (SOMBRAS INTERNAS ESTILO LOGIN)
+   ========================================================================== */
+.card {
+    background: #fff;
+    border-radius: 25px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.kpi-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.kpi-card {
+    text-align: center;
+    padding: 20px !important;
+    /* Sombra interna idêntica ao campo de login */
+    box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.06), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.kpi-card label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.kpi-value { font-size: 32px; font-weight: bold; }
+.os-aberta { color: #55b98f; }
+.os-validacao { color: #f59e0b; }
+.os-externa { color: #ef4444; }
+
+/* ==========================================================================
+   4. FORMULÁRIO E TABELA
+   ========================================================================== */
+.card-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 50px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.input-group input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 12px 25px;
+    font-size: 14px;
+    background: transparent;
+}
+
+.icon-passive { padding-right: 20px; color: #55b98f; }
+
+.table-container { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    border-bottom: 2px solid #55b98f;
+}
+
+tbody td {
+    padding: 14px 12px;
+    font-size: 14px;
+    color: #475569;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* ==========================================================================
+   5. FOOTER
+   ========================================================================== */
+footer {
+    text-align: center;
+    padding: 1.2rem;
+    border-top: 1px solid #e2e8f0;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-family: monospace;
+    background-color: #f8fafc;
+    width: 100%;
+}
+
+/* ==========================================================================
+   6. RESPONSIVIDADE
+   ========================================================================== */
+@media (max-width: 768px) {
+    .kpi-container { grid-template-columns: 1fr; }
+    header { flex-direction: column; gap: 15px; }
+    .logo-wrapper { width: 100%; justify-content: center; }
+}

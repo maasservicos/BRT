@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestão de Frota</title>
+    <link rel="stylesheet" href="painel.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-wrapper">
+                <div class="logo-maas"><img src="Imagens/Logo Maas.png" class="logo-img-maas"></div>
+                <div class="Linha"></div>
+                <div class="logo-brt"><img src="Imagens/Logo BRT.png" class="logo-img-brt"></div>
+            </div>
+            <div class="header-text">
+                <h1>ACOMPANHAMENTO DE FROTA</h1>
+                <p id="lblNomeUsuario">👤 Olá, Carregando...</p>
+                <a href="#" id="btnSair" class="btn-sair-link">SAIR [X]</a>
+            </div>
+            <a href="../Controle de O.S/ordemdeservico.html" style="font-size: 13px; color: #0ea5e9; text-decoration: none; font-weight: bold; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 50px; transition: 0.3s;">
+                 Ordem de Serviço
+            </a>
+        </header>
+
+        <div class="kpi-container">
+            <div class="card kpi-card">
+                <label>O.S. EM ABERTO</label>
+                <div id="kpiAbertas" class="kpi-value os-aberta">0</div>
+            </div>
+            <div class="card kpi-card">
+                <label>EM VALIDAÇÃO</label>
+                <div id="kpiValidacao" class="kpi-value os-validacao">0</div>
+            </div>
+            <div class="card kpi-card">
+                <label>OFICINA EXTERNA</label>
+                <div id="kpiExterna" class="kpi-value os-externa">0</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Monitoramento de Ordens de Serviço</div>
+            
+            <div class="input-group">
+                <input type="text" id="txtBuscaFiltro" placeholder="Filtrar por Prefixo ou Nº O.S...">
+                <span class="icon-passive">🔍</span>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nº O.S</th>
+                            <th>Prefixo</th>
+                            <th>Data Abertura</th>
+                            <th>Status</th>
+                            <th>Localização</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDashboard">
+                        <tr><td colspan="5" style="text-align:center; padding: 20px;">Carregando frota...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer>SISTEMA DE GESTÃO DE FROTA - MAAS | BRT</footer>
+
+    <script type="module" src="painel.js"></script>
+</body>
+</html>
