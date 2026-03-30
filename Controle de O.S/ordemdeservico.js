@@ -1137,3 +1137,29 @@ async function carregarFornecedoresNoModal(termo) {
         tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
     }
 }
+
+/* ==========================================================================
+   8. INTEGRAÇÃO COM DASHBOARD: PESQUISA AUTOMÁTICA AO CARREGAR
+   ========================================================================== */
+document.addEventListener('DOMContentLoaded', function() {
+    // Verifica se existe um número de O.S. vindo do clique no Dashboard
+    const osVindaDoDashboard = localStorage.getItem('os_para_pesquisar');
+
+    if (osVindaDoDashboard) {
+        const campoNumOS = document.getElementById('txtNumOS');
+        
+        if (campoNumOS) {
+            // 1. Preenche o campo com o número recebido
+            campoNumOS.value = osVindaDoDashboard;
+
+            // 2. Limpa o "recado" para não repetir a busca em futuros refreshs da página
+            localStorage.removeItem('os_para_pesquisar');
+
+            // 3. Dispara o evento 'blur' para acionar a sua lógica de busca no Supabase
+            // (A mesma lógica que já está configurada na Seção 3 do seu código original)
+            setTimeout(() => {
+                campoNumOS.dispatchEvent(new Event('blur'));
+            }, 100); 
+        }
+    }
+});

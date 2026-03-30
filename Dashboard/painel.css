@@ -101,6 +101,7 @@ header p { font-size: 13px; color: #64748b; }
     padding: 20px !important;
     /* Sombra interna idêntica ao campo de login */
     box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.06), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
 }
 
 .kpi-card label {
@@ -181,6 +182,22 @@ footer {
     width: 100%;
 }
 
+/* Estilo para a linha clicável do Dashboard */
+.linha-os-clicavel {
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+}
+
+.linha-os-clicavel:hover {
+    background-color: #f1f5f9 !important;
+    transform: scale(1.01); /* Dá um leve "pulo" ao passar o mouse */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.linha-os-clicavel:active {
+    background-color: #e2e8f0 !important;
+    transform: scale(0.99);
+}
 /* ==========================================================================
    6. RESPONSIVIDADE
    ========================================================================== */
