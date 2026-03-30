@@ -104,7 +104,7 @@ function renderizarTabela(lista, statusAtual = "FILTRADO") {
         // Cores de Status
         let statusCor = '#22c55e'; 
         if (os.status === 'VALIDACAO') statusCor = '#f59e0b'; 
-        if (os.status === 'FECHADA') statusCor = '#3b82f6'; 
+        if (os.status === 'FECHADA') statusCor = '#000000'; 
 
         const encsExternos = os.OS_Encaminhamentos?.filter(e => e.servico_externo && e.status_enc !== 'CONCLUIDO');
         const ehExterno = encsExternos?.length > 0;
