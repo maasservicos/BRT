@@ -46,7 +46,7 @@ async function carregarDadosDashboard() {
             .from('Ordens_Servico')
             .select(`
                 *,
-                OS_Encaminhamentos (
+                OS_Encaminhamentos!fk_ordens_servico (
                     servico_externo,
                     status_enc,
                     cod_fornecedor
