@@ -936,10 +936,41 @@ async function carregarSSPendentesNoModal() {
 async function importarDadosDaSSParaOS(ss) {
     const txtNumSS = document.getElementById('txtNumSS'); 
     if (txtNumSS) txtNumSS.value = ss.numero_ss || '';
+
     const txtPrefixo = document.getElementById('txtPrefixo'); 
-    if (txtPrefixo) { txtPrefixo.value = ss.identificacao_veiculo || ''; txtPrefixo.dispatchEvent(new Event('blur')); }
+    if (txtPrefixo) { 
+        txtPrefixo.value = ss.identificacao_veiculo || ''; 
+        txtPrefixo.dispatchEvent(new Event('blur')); 
+    }
+
     const txtDefeito = document.getElementById('txtDefeito'); 
     if (txtDefeito) txtDefeito.value = ss.defeito_relatado || '';
+
+    // 🚀 Lógica para Auto-Gerar o número da O.S. ao importar
+    try {
+        const dataOS = await dbService.execute(
+            client.from('Ordens_Servico')
+            .select('numero_sequencial')
+            .order('numero_sequencial', { ascending: false })
+            .limit(1)
+        );
+
+        let proximoOS = (dataOS && dataOS.length > 0) ? dataOS[0].numero_sequencial + 1 : 1;
+        const formatadoOS = String(proximoOS).padStart(6, '0');
+        
+        const campoNumOS = document.getElementById('txtNumOS');
+        if(campoNumOS) campoNumOS.value = formatadoOS;
+        
+        const lblResumo = document.getElementById('lblResumoOS');
+        if(lblResumo) lblResumo.innerText = formatadoOS;
+        
+        aplicarStatusVisual("ABERTA");
+        atualizarTextoBotaoOS(false);
+        console.log("✅ O.S Auto-gerada na Importação:", formatadoOS);
+    } catch (err) {
+        console.error("Erro ao gerar OS automática na importação:", err);
+    }
+
     document.getElementById('modalSS').classList.add('hidden');
 }
 
