@@ -404,7 +404,7 @@ button {
 .insumo-categories { background: #eee; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
 .btn-ghost.active { background-color: var(--laranja-maas) !important; color: white !important; font-weight: bold; }
 .insumo-form { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
-.row-rascunho { background-color: #fffbeb !important; border-left: 4px solid #f59e0b; }
+.row-rascunho { background-color: #ffffff !important; border-left: 4px solid #f59e0b; }
 .badge-pendente { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; border: 1px solid #fcd34d; }
 .btn-remove-rascunho { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; }
 .msg-warning { font-size: 11px; color: #b45309; margin-top: 8px; }

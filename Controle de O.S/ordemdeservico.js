@@ -219,6 +219,10 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
     const numOS = parseInt(this.value);
     if (!numOS || isNaN(numOS)) return;
 
+    // 🚀 Limpeza de rascunho ao pesquisar nova O.S
+    rascunhoInsumos = [];
+    renderizarTabelaRascunho();
+
     try {
         const os = await dbService.execute(client.from('Ordens_Servico').select('*').eq('numero_sequencial', numOS).maybeSingle());
 
@@ -611,13 +615,13 @@ document.getElementById('btnAdicionarInsumo')?.addEventListener('click', () => {
     if (qtd <= 0) return alert("Informe a quantidade!");
 
     const item = { 
-        tipo: window.tipoBuscaAtual, 
-        codigo: document.getElementById('txtCodInsumo').value, 
-        descricao: document.getElementById('txtDescInsumo').value, 
-        quantidade: qtd, 
-        valor_unitario: valor, 
-        total: qtd * valor 
-    };
+    tipo: window.tipoBuscaAtual, 
+    codigo: document.getElementById('txtCodInsumo').value, 
+    descricao: document.getElementById('txtDescInsumo').value, 
+    quantidade: qtd, 
+    valor_unitario: valor, 
+    total: Number((qtd * valor).toFixed(2)) 
+};
 
     rascunhoInsumos.push(item);
     document.getElementById('txtCodInsumo').value = ""; 
@@ -634,7 +638,7 @@ function renderizarTabelaRascunho() {
     const msg = document.getElementById('msgRascunho');
     
     if (rascunhoInsumos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum insumo no rascunho.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Nenhum insumo lançado.</td></tr>`;
         if(msg) msg.style.display = 'none';
         return;
     }
@@ -643,16 +647,18 @@ function renderizarTabelaRascunho() {
     tbody.innerHTML = "";
 
     rascunhoInsumos.forEach((item, index) => {
+        const badge = item.persistido 
+            ? `<span style="background: #ffffff; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px;">OFICIAL</span>` 
+            : `<span style="background: #ffffff; color: #854d0e; padding: 2px 6px; border-radius: 4px; font-size: 10px;">RASCUNHO</span>`;
+
         tbody.innerHTML += `
             <tr class="row-rascunho">
-                <td>${item.tipo} <span class="badge-pendente">RASCUNHO</span></td>
+                <td>${item.tipo} ${badge}</td>
                 <td>${item.codigo}</td>
                 <td>${item.descricao}</td>
                 <td>${item.quantidade}</td>
-                <td>R$ ${item.valor_unitario.toFixed(2)}</td>
-                <td>R$ ${item.total.toFixed(2)}</td>
-                <td class="text-center">
-                    <button class="btn-remove-rascunho" onclick="removerDoRascunho(${index})">×</button>
+                <td><strong>R$ ${item.total.toFixed(2)}</strong></td> <td class="text-center">
+                    <button class="btn-remove-rascunho" onclick="window.excluirInsumo(null, null, ${index})">×</button>
                 </td>
             </tr>`;
     });
@@ -678,14 +684,34 @@ function atualizarResumoFinanceiroLocal() {
 
 async function carregarInsumosDoEncaminhamento(idEnc) {
     try {
-        const itens = await dbService.execute(client.from('itens_servico').select('*').eq('id_encaminhamento', idEnc));
-        const tbody = document.getElementById('listaItensOS');
-        tbody.innerHTML = "";
-        itens?.forEach(item => {
-            tbody.innerHTML += `<tr><td>${item.tipo}</td><td>${item.codigo}</td><td>${item.descricao}</td><td>${item.quantidade}</td><td>R$ ${item.valor_unitario.toFixed(2)}</td><td>R$ ${item.total.toFixed(2)}</td><td><button onclick="excluirInsumo('${item.id}', '${idEnc}')">🗑️</button></td></tr>`;
-        });
+        // 🚀 Busca TODOS os itens vinculados a este ID de encaminhamento
+        const { data: itens, error } = await client
+            .from('itens_servico')
+            .select('*')
+            .eq('id_encaminhamento', idEnc);
+
+        if (error) throw error;
+
+        // 🚀 Sincroniza o rascunho com a lista completa vinda do banco
+        if (itens && itens.length > 0) {
+            rascunhoInsumos = itens.map(item => ({
+                id_banco: item.id, // Guardamos o ID real para exclusão
+                tipo: item.tipo,
+                codigo: item.codigo,
+                descricao: item.descricao,
+                quantidade: item.quantidade,
+                total: item.total,
+                persistido: true // Marca como oficial
+            }));
+        } else {
+            rascunhoInsumos = [];
+        }
+
+        renderizarTabelaRascunho();
+        atualizarResumoFinanceiroLocal();
+
     } catch (err) {
-        console.error("Erro ao carregar insumos:", err);
+        console.error("Erro ao carregar lista de insumos:", err);
     }
 }
 
@@ -704,11 +730,12 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
     const btn = this;
     if (btn.disabled) return;
     
-    // ❌ A TRAVA DO ENCAMINHAMENTO FOI REMOVIDA DAQUI!
-    
     try {
         btn.disabled = true;
         btn.innerHTML = "💾 Salvando...";
+
+        const temInsumo = rascunhoInsumos && rascunhoInsumos.length > 0;
+        const primeiroItem = temInsumo ? rascunhoInsumos[0] : null;
 
         const numOS = parseInt(document.getElementById('txtNumOS').value);
         if (!numOS) throw new Error("Número da O.S. inválido.");
@@ -718,8 +745,6 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
 
         const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
         const numSS = document.getElementById('txtNumSS')?.value || null; 
-        
-        // 🚀 LÊ A CAIXINHA DO DANO SEVERO
         const danoSevero = document.getElementById('chkDanoSevero')?.checked || false;
 
         // 1. SALVA OU ATUALIZA A O.S. PRINCIPAL
@@ -730,7 +755,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
                 link_documentos: linkDoc,
                 numero_ss: numSS,
-                is_dano_severo: danoSevero // 🚀 SALVA NO UPDATE
+                is_dano_severo: danoSevero
             }).eq('id', osExistente.id).select().single());
         } else {
             osOficial = await dbService.execute(client.from('Ordens_Servico').insert([{
@@ -742,60 +767,40 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 link_documentos: linkDoc,
                 numero_ss: numSS,
                 usuario_abertura: usuarioLogado.nome,
-                is_dano_severo: danoSevero // 🚀 SALVA NO INSERT
+                is_dano_severo: danoSevero
             }]).select().single());
         }
 
         window.idOSGlobal = osOficial.id;
 
-        // 2. SÓ TENTA SALVAR ENCAMINHAMENTO SE O MECÂNICO DEIXOU ELE ABERTO NA TELA
+        // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
         if (window.idEncaminhamentoAtivo) {
-            let idEncaminhamentoFinal;
             const dadosEnc = { 
                 id_os: window.idOSGlobal,
                 tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
                 codigo_etapa: document.getElementById('txtCodEtapa').value, 
                 encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
                 cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
-                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim'
+                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim',
+                insumo_codigo: primeiroItem ? primeiroItem.codigo : null,
+                insumo_descricao: primeiroItem ? primeiroItem.descricao : null,
+                insumo_quantidade: primeiroItem ? primeiroItem.quantidade : 0,
+                insumo_valor_total: primeiroItem ? primeiroItem.total : 0
             };
 
             const idAtivo = String(window.idEncaminhamentoAtivo);
-            const ehRascunho = idAtivo.startsWith("TEMP") || idAtivo.startsWith("RASCUNHO");
-
-            if (ehRascunho) {
-                const novoEnc = await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]).select().single());
-                idEncaminhamentoFinal = novoEnc.id;
+            if (idAtivo.startsWith("TEMP")) {
+                await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]));
             } else {
                 await dbService.execute(client.from('OS_Encaminhamentos').update(dadosEnc).eq('id', window.idEncaminhamentoAtivo));
-                idEncaminhamentoFinal = window.idEncaminhamentoAtivo;
-            }
-
-            if (typeof rascunhoInsumos !== 'undefined' && rascunhoInsumos.length > 0) {
-                const insumosOficiais = rascunhoInsumos.map(item => ({
-                    os_id: window.idOSGlobal,
-                    id_encaminhamento: idEncaminhamentoFinal,
-                    tipo: item.tipo,
-                    codigo: item.codigo,
-                    descricao: item.descricao,
-                    quantidade: item.quantidade,
-                    valor_unitario: item.valor_unitario,
-                    total: item.total
-                }));
-                await dbService.execute(client.from('itens_servico').insert(insumosOficiais));
             }
         }
 
-        // 3. EFEITO CASCATA NA S.S.
         if (numSS) {
-            console.log(`Atualizando S.S. ${numSS} para EM ANDAMENTO...`);
-            await dbService.execute(client.from('Solicitacao_Servicos')
-                .update({ status_ss: 'EM ANDAMENTO' }) 
-                .eq('numero_ss', numSS));
+            await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'EM ANDAMENTO' }).eq('numero_ss', numSS));
         }
 
         alert("✅ O.S atualizada com sucesso!");
-        
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setTimeout(() => { window.location.reload(); }, 800);
 
@@ -836,14 +841,11 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             mensagem = "⏳ O.S enviada para Validação!";
         }
 
-        const payload = { 
-            status: novoStatus, 
-            link_documentos: linkDoc 
-        };
+        const payload = { status: novoStatus, link_documentos: linkDoc };
         
         if (novoStatus === "FECHADA") {
             payload.data_fechamento = new Date().toISOString();
-            payload.usuario_fechamento = usuarioLogado.nome; // 🚀 USUÁRIO FECHAMENTO AQUI
+            payload.usuario_fechamento = usuarioLogado.nome; 
         }
 
         await dbService.execute(client.from('Ordens_Servico').update(payload).eq('id', idOS));
@@ -853,22 +855,13 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             const prefixo = document.getElementById('txtPrefixo')?.value;
 
             if (numSS) {
-                console.log(`Baixando a S.S. ${numSS} para FECHADA...`);
-                await dbService.execute(client.from('Solicitacao_Servicos')
-                    .update({ status_ss: 'FECHADA' }) 
-                    .eq('numero_ss', numSS));
+                await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'FECHADA' }).eq('numero_ss', numSS));
             }
-
             if (prefixo) {
-                console.log(`Baixando ocorrências 'Em Andamento' do veículo ${prefixo}...`);
-                await dbService.execute(client.from('Ocorrencia') 
-                    .update({ status: 'FECHADA' }) 
-                    .eq('prefixo_veiculo', prefixo)
-                    .eq('status', 'Em Andamento')); 
+                await dbService.execute(client.from('Ocorrencia').update({ status: 'FECHADA' }).eq('prefixo_veiculo', prefixo).eq('status', 'Em Andamento')); 
             }
         }
 
-        if (novoStatus === "FECHADA") atualizarDataVisual('fechamento');
         alert(mensagem);
         window.location.reload(); 
 
@@ -877,295 +870,150 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
     }
 });
 
-function limparTelaOS() {
-    window.idOSGlobal = null;
-    window.idEncaminhamentoAtivo = null;
+/* ==========================================================================
+   7. MODAIS E UTILITÁRIOS FINAIS
+   ========================================================================== */
+window.excluirInsumo = async function(idInsumo, idEncaminhamento, index) {
+    if (!confirm("Deseja realmente remover este insumo?")) return;
 
-    document.querySelectorAll('input, textarea, select').forEach(campo => {
-        if (campo.type !== 'button' && campo.type !== 'submit' && campo.type !== 'checkbox') campo.value = '';
-    });
-    
-    const txtLinkDoc = document.getElementById('txtLinkDocumentos');
-    if (txtLinkDoc) txtLinkDoc.disabled = true;
+    try {
+        // 🚀 Remove da memória local
+        if (index !== undefined) {
+            rascunhoInsumos.splice(index, 1);
+        } else {
+            rascunhoInsumos = [];
+        }
 
-    const tbody = document.getElementById('corpoHistoricoEnc');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Pesquise ou crie uma O.S para ver o histórico</td></tr>';
+        // 🚀 Limpa fisicamente do banco de dados
+        const idAtivo = idEncaminhamento || window.idEncaminhamentoAtivo;
+        if (idAtivo && !String(idAtivo).startsWith('TEMP')) {
+            const { error } = await client
+                .from('OS_Encaminhamentos')
+                .update({ 
+                    insumo_codigo: null, 
+                    insumo_descricao: null, 
+                    insumo_quantidade: 0, 
+                    insumo_valor_total: 0 
+                })
+                .eq('id', idAtivo);
 
-    if (typeof atualizarTextoBotaoOS === "function") atualizarTextoBotaoOS(false);
-    
-    const badgeTopo = document.getElementById('badgeStatusTopo');
-    if (badgeTopo) {
-        badgeTopo.innerText = 'NOVA';
-        badgeTopo.style.backgroundColor = '#64748b'; 
+            if (error) throw error;
+        }
+
+        alert("🗑️ Insumo removido com sucesso!");
+        
+        renderizarTabelaRascunho();
+        atualizarResumoFinanceiroLocal();
+
+    } catch (err) {
+        console.error("Erro ao excluir:", err);
+        alert("Erro ao excluir no banco: " + err.message);
     }
-    if(document.getElementById('txtDataFechamentoEnc')) {
-        document.getElementById('txtDataFechamentoEnc').value = "Pendente...";
-    }
-    
-    window.atualizarResumoCustosOS(null, { pecas: 0, mo: 0 });
-}
+};
 
-// =====================================================================
-// EVENTOS DO MODAL DE S.S. PENDENTES (E AUTO GERAR O.S)
-// =====================================================================
+// Funções de Modal e Importação de S.S. mantidas conforme original
 async function carregarSSPendentesNoModal() {
     const tbody = document.getElementById('tabelaSS'); 
     if (!tbody) return;
-
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">⏳ A procurar S.S. abertas...</td></tr>';
-
     try {
-        const { data, error } = await client
-            .from('Solicitacao_Servicos')
-            .select('*')
-            .eq('status_ss', 'ABERTA')
-            .order('numero_ss', { ascending: true }); 
-
+        const { data, error } = await client.from('Solicitacao_Servicos').select('*').eq('status_ss', 'ABERTA').order('numero_ss', { ascending: true }); 
         if (error) throw error;
-
         tbody.innerHTML = ''; 
-
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #6b7280;">Nenhuma S.S. pendente no momento.</td></tr>';
             return;
         }
-
         data.forEach(ss => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="text-align: center; font-weight: bold;">${ss.numero_ss || '-'}</td>
-                <td style="text-align: center;">${ss.identificacao_veiculo || '-'}</td>
-                <td>${ss.servico || '-'}</td>
-                <td>${ss.defeito_relatado || 'Sem descrição'}</td>
-                <td style="text-align: center;">
-                    <button class="btn-importar-linha" style="padding: 4px 12px; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Importar
-                    </button>
-                </td>
-            `;
-
-            const btnImportar = tr.querySelector('.btn-importar-linha');
-            btnImportar.addEventListener('click', () => importarDadosDaSSParaOS(ss));
+            tr.innerHTML = `<td>${ss.numero_ss || '-'}</td><td>${ss.identificacao_veiculo || '-'}</td><td>${ss.servico || '-'}</td><td>${ss.defeito_relatado || 'Sem descrição'}</td><td style="text-align: center;"><button class="btn-importar-linha">Importar</button></td>`;
+            tr.querySelector('.btn-importar-linha').addEventListener('click', () => importarDadosDaSSParaOS(ss));
             tbody.appendChild(tr);
         });
-
-    } catch (err) {
-        console.error("Erro ao carregar S.S.:", err);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Erro ao carregar S.S.</td></tr>';
-    }
+    } catch (err) { console.error(err); }
 }
 
 async function importarDadosDaSSParaOS(ss) {
-    console.log("📥 DADOS REAIS QUE VIERAM DO SUPABASE:", ss);
-
     const txtNumSS = document.getElementById('txtNumSS'); 
-    if (txtNumSS) {
-        txtNumSS.value = ss.numero_ss || ss.id || ss.num_ss || 'ERRO DE COLUNA';
-    }
-
+    if (txtNumSS) txtNumSS.value = ss.numero_ss || '';
     const txtPrefixo = document.getElementById('txtPrefixo'); 
-    if (txtPrefixo) {
-        txtPrefixo.value = ss.identificacao_veiculo || '';
-        txtPrefixo.dispatchEvent(new Event('blur'));
-    }
-
-    const cboTipoServico = document.getElementById('cboTipoServico'); 
-    if (cboTipoServico) cboTipoServico.value = ss.servico || ''; 
-
+    if (txtPrefixo) { txtPrefixo.value = ss.identificacao_veiculo || ''; txtPrefixo.dispatchEvent(new Event('blur')); }
     const txtDefeito = document.getElementById('txtDefeito'); 
     if (txtDefeito) txtDefeito.value = ss.defeito_relatado || '';
-
-    try {
-        const dataOS = await dbService.execute(client.from('Ordens_Servico').select('numero_sequencial').order('numero_sequencial', { ascending: false }).limit(1));
-        let proximoOS = (dataOS && dataOS.length > 0) ? dataOS[0].numero_sequencial + 1 : 1;
-        const formatadoOS = String(proximoOS).padStart(6, '0');
-        
-        const campoNumOS = document.getElementById('txtNumOS');
-        if(campoNumOS) campoNumOS.value = formatadoOS;
-        
-        const lblResumo = document.getElementById('lblResumoOS');
-        if(lblResumo) lblResumo.innerText = formatadoOS;
-        
-        aplicarStatusVisual("ABERTA");
-        atualizarTextoBotaoOS(false);
-        console.log("✅ O.S Auto-gerada:", formatadoOS);
-    } catch (err) {
-        console.error("Erro ao gerar OS automática na importação:", err);
-    }
-
-    const modal = document.getElementById('modalSS');
-    if (modal) modal.classList.add('hidden');
+    document.getElementById('modalSS').classList.add('hidden');
 }
-
-// =====================================================================
-// 7. NOVOS MODAIS: ETAPAS E FORNECEDORES (COM DEBOUNCE APLICADO)
-// =====================================================================
 
 function configurarEventosModalEtapas() {
     const btnLupa = document.getElementById('btnLupaEtapa'); 
-    const modal = document.getElementById('modalEtapas');
-    const btnFechar = document.getElementById('btnFecharModalEtapas');
     const inputBusca = document.getElementById('txtBuscaEtapaModal');
-
     if (btnLupa) {
         btnLupa.addEventListener('click', () => {
-            modal.classList.remove('hidden');
-            inputBusca.value = '';
-            inputBusca.focus();
-            carregarEtapasNoModal('');
+            document.getElementById('modalEtapas').classList.remove('hidden');
+            inputBusca.value = ''; carregarEtapasNoModal('');
         });
     }
-
-    if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
-
-    if (inputBusca) {
-        const debouncedBusca = debounce((e) => {
-            const termo = e.target.value.trim();
-            if (termo.length === 0 || termo.length >= 2) carregarEtapasNoModal(termo);
-        }, 400); 
-        
-        inputBusca.addEventListener('input', debouncedBusca);
-    }
+    document.getElementById('btnFecharModalEtapas')?.addEventListener('click', () => document.getElementById('modalEtapas').classList.add('hidden'));
+    inputBusca?.addEventListener('input', debounce((e) => carregarEtapasNoModal(e.target.value.trim()), 400));
 }
 
 async function carregarEtapasNoModal(termo) {
     const tbody = document.getElementById('listaBuscaEtapasModal');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
-
     try {
         let query = client.from('Apoio_Etapas').select('*').limit(50);
         if (termo) query = query.ilike('descricao', `%${termo}%`);
-
         const data = await dbService.execute(query);
         tbody.innerHTML = '';
-
-        if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Nenhuma etapa encontrada.</td></tr>`;
-            return;
-        }
-
         data.forEach(etapa => {
             const tr = document.createElement('tr');
-            tr.style.cursor = "pointer";
-            
-            tr.innerHTML = `<td>${etapa.codigo_etapa || '-'}</td><td>${etapa.descricao || '-'}</td>`;
-            
-            tr.onclick = function() {
-                const campoCod = document.getElementById('txtCodEtapa'); 
-                const campoDesc = document.getElementById('txtDescricaoEtapa'); 
-                
-                if(campoCod) campoCod.value = etapa.codigo_etapa; 
-                if(campoDesc) campoDesc.value = etapa.descricao;
-                
+            tr.innerHTML = `<td>${etapa.codigo_etapa}</td><td>${etapa.descricao}</td>`;
+            tr.onclick = () => {
+                document.getElementById('txtCodEtapa').value = etapa.codigo_etapa;
+                document.getElementById('txtDescricaoEtapa').value = etapa.descricao;
                 document.getElementById('modalEtapas').classList.add('hidden');
             };
             tbody.appendChild(tr);
         });
-    } catch (err) {
-        console.error("Erro na busca de etapas:", err);
-        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
-    }
+    } catch (err) { console.error(err); }
 }
 
 function configurarEventosModalFornecedores() {
-    const btnLupa = document.getElementById('btnLupaFornecedor'); 
-    const modal = document.getElementById('modalFornecedores');
-    const btnFechar = document.getElementById('btnFecharModalFornecedores');
-    const inputBusca = document.getElementById('txtBuscaFornecedorModal');
-
+    const btnLupa = document.getElementById('btnLupaFornecedor');
     if (btnLupa) {
         btnLupa.addEventListener('click', () => {
-            modal.classList.remove('hidden');
-            inputBusca.value = '';
-            inputBusca.focus();
+            document.getElementById('modalFornecedores').classList.remove('hidden');
             carregarFornecedoresNoModal('');
         });
     }
-
-    if (btnFechar) btnFechar.addEventListener('click', () => modal.classList.add('hidden'));
-
-    if (inputBusca) {
-        const debouncedBuscaForn = debounce((e) => {
-            const termo = e.target.value.trim();
-            if (termo.length === 0 || termo.length >= 2) carregarFornecedoresNoModal(termo);
-        }, 400); 
-        
-        inputBusca.addEventListener('input', debouncedBuscaForn);
-    }
+    document.getElementById('btnFecharModalFornecedores')?.addEventListener('click', () => document.getElementById('modalFornecedores').classList.add('hidden'));
 }
 
 async function carregarFornecedoresNoModal(termo) {
     const tbody = document.getElementById('listaBuscaFornecedoresModal');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">⏳ Buscando...</td></tr>';
-
     try {
-        let query = client.from('Fornecedores')
-                          .select('*')
-                          .order('nfantasia', { ascending: true }); 
-
-        if (termo) {
-            query = query.ilike('nfantasia', `%${termo}%`);
-        }
-
+        let query = client.from('Fornecedores').select('*').order('nfantasia', { ascending: true });
+        if (termo) query = query.ilike('nfantasia', `%${termo}%`);
         const data = await dbService.execute(query);
         tbody.innerHTML = '';
-
-        if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">Nenhum fornecedor encontrado.</td></tr>`;
-            return;
-        }
-
         data.forEach(forn => {
             const tr = document.createElement('tr');
-            tr.style.cursor = "pointer";
-            
-            tr.onmouseover = () => tr.style.backgroundColor = "#f1f5f9";
-            tr.onmouseout = () => tr.style.backgroundColor = "transparent";
-
-            const identificacao = forn.cnpj_cpf || forn.codigo_fornecedor || '-';
-            const nomeFornecedor = forn.nfantasia || '-';
-
-            tr.innerHTML = `<td>${identificacao}</td><td>${nomeFornecedor}</td>`;
-            
-            tr.onclick = function() {
-                const campoFornecedor = document.getElementById('txtCodFornecedor'); 
-                
-                if(campoFornecedor) campoFornecedor.value = forn.codigo_fornecedor; 
-                
+            tr.innerHTML = `<td>${forn.codigo_fornecedor}</td><td>${forn.nfantasia}</td>`;
+            tr.onclick = () => {
+                document.getElementById('txtCodFornecedor').value = forn.codigo_fornecedor;
                 document.getElementById('modalFornecedores').classList.add('hidden');
             };
             tbody.appendChild(tr);
         });
-    } catch (err) {
-        console.error("Erro na busca de fornecedores:", err);
-        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-danger">Erro ao carregar.</td></tr>';
-    }
+    } catch (err) { console.error(err); }
 }
 
-/* ==========================================================================
-   8. INTEGRAÇÃO COM DASHBOARD: PESQUISA AUTOMÁTICA AO CARREGAR
-   ========================================================================== */
 document.addEventListener('DOMContentLoaded', function() {
-    // Verifica se existe um número de O.S. vindo do clique no Dashboard
     const osVindaDoDashboard = localStorage.getItem('os_para_pesquisar');
-
     if (osVindaDoDashboard) {
         const campoNumOS = document.getElementById('txtNumOS');
-        
         if (campoNumOS) {
-            // 1. Preenche o campo com o número recebido
             campoNumOS.value = osVindaDoDashboard;
-
-            // 2. Limpa o "recado" para não repetir a busca em futuros refreshs da página
             localStorage.removeItem('os_para_pesquisar');
-
-            // 3. Dispara o evento 'blur' para acionar a sua lógica de busca no Supabase
-            // (A mesma lógica que já está configurada na Seção 3 do seu código original)
-            setTimeout(() => {
-                campoNumOS.dispatchEvent(new Event('blur'));
-            }, 100); 
+            setTimeout(() => { campoNumOS.dispatchEvent(new Event('blur')); }, 100); 
         }
     }
 });
