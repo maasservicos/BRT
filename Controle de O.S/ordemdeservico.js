@@ -228,6 +228,12 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             document.getElementById('numKm').value = os.km_atual || 0;
             document.getElementById('txtDefeito').value = os.defeito_relatado || "";
 
+            const campoAbertura = document.getElementById('txtDataAbertura');
+            if (campoAbertura && os.data_abertura) {
+            const d = new Date(os.data_abertura);
+            campoAbertura.value = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            }
+
             const chkDano = document.getElementById('chkDanoSevero');
             if (chkDano) chkDano.checked = (os.is_dano_severo === true);
             
