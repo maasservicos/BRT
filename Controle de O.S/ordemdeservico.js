@@ -14,11 +14,11 @@ function verificarAcessoOS() {
 
     const usuario = JSON.parse(crachaString);
 
-    if (usuario.grupo !== 'Maas' || usuario.subgrupo !== 'Manutencao') {
-        alert(`Acesso Restrito! Seu perfil (${usuario.grupo} - ${usuario.subgrupo || 'Sem Subgrupo'}) não tem permissão para acessar Ordens de Serviço.`);
-        window.location.href = "../index.html";
-        return false;
-    }
+   if (usuario.grupo !== 'Maas' || usuario.subgrupo !== 'Manutencao') {
+    alert(`Acesso Restrito! Seu perfil (${usuario.grupo} - ${usuario.subgrupo || 'Sem Subgrupo'}) não tem permissão para acessar Ordens de Serviço.`);
+    window.location.href = "../index.html";
+    return false;
+}
 
     console.log(`Bem-vindo, ${usuario.nome}! Acesso liberado à O.S.`);
     return true;
@@ -63,7 +63,6 @@ let rascunhoInsumos = [];
    1. INICIALIZAÇÃO DA PÁGINA
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', function() {
-    // 👤 PREENCHE O NOME NO TOPO E CONFIGURA O LOGOUT
     const lblNome = document.getElementById('lblNomeUsuario');
     if (lblNome) lblNome.innerText = `👤 Olá, ${usuarioLogado.nome}`;
 
@@ -148,6 +147,15 @@ function aplicarStatusVisual(status) {
         const el = document.getElementById(id);
         if (el) { el.innerText = texto; el.style.backgroundColor = cor; el.style.color = "white"; }
     });
+
+    const btnReabrir = document.getElementById('btnReabrirOS');
+    if (btnReabrir) {
+        if (isFechada) {
+            btnReabrir.classList.remove('hidden');
+        } else {
+            btnReabrir.classList.add('hidden');
+        }
+    }
     
     document.getElementById('btnSalvarOS').disabled = isFechada;
     
@@ -219,7 +227,6 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
     const numOS = parseInt(this.value);
     if (!numOS || isNaN(numOS)) return;
 
-    // 🚀 Limpeza de rascunho ao pesquisar nova O.S
     rascunhoInsumos = [];
     renderizarTabelaRascunho();
 
@@ -471,7 +478,9 @@ window.editarEncaminhamento = async function(idEnc) {
             }
         }
         
-        carregarInsumosDoEncaminhamento(idEnc);
+        // 🚀 Ajustado: await para carregar insumos sincronizado com a edição
+        await carregarInsumosDoEncaminhamento(idEnc);
+        
         document.getElementById('txtNumEncaminhamento').scrollIntoView({ behavior: 'smooth' });
     } catch(err) {
         console.error("Erro ao carregar edição:", err);
@@ -533,7 +542,7 @@ async function carregarHistoricoEncaminhamentos() {
             const isEncerrado = enc.status_enc === 'CONCLUIDO';
             
             const btnCheck = isEncerrado 
-                ? `<span title="Concluído" style="font-size: 14px; cursor: help;">✅</span>` 
+                ? `<button onclick="window.reabrirEncaminhamento('${enc.id}')" class="btn-small" title="Reabrir Encaminhamento" style="background: #f59e0b; color: white;">↩️</button>` 
                 : `<button onclick="window.finalizarEncaminhamento('${enc.id}')" class="btn-small" title="Finalizar Encaminhamento">✔️</button>`;
                 
             tbody.innerHTML += `
@@ -692,24 +701,35 @@ async function carregarInsumosDoEncaminhamento(idEnc) {
 
         if (error) throw error;
 
-        // 🚀 Sincroniza o rascunho com a lista completa vinda do banco
+        // 🚀 Sincroniza o rascunho com a lista completa vinda do banco + Plano B legado
         if (itens && itens.length > 0) {
             rascunhoInsumos = itens.map(item => ({
-                id_banco: item.id, // Guardamos o ID real para exclusão
+                id_banco: item.id,
                 tipo: item.tipo,
                 codigo: item.codigo,
                 descricao: item.descricao,
                 quantidade: item.quantidade,
                 total: item.total,
-                persistido: true // Marca como oficial
+                persistido: true
             }));
         } else {
-            rascunhoInsumos = [];
+            const encPai = await client.from('OS_Encaminhamentos').select('insumo_codigo, insumo_descricao, insumo_quantidade, insumo_valor_total').eq('id', idEnc).single();
+            if (encPai.data && encPai.data.insumo_codigo) {
+                rascunhoInsumos = [{
+                    tipo: 'PRODUTO',
+                    codigo: encPai.data.insumo_codigo,
+                    descricao: encPai.data.insumo_descricao,
+                    quantidade: encPai.data.insumo_quantidade,
+                    total: encPai.data.insumo_valor_total,
+                    persistido: true
+                }];
+            } else {
+                rascunhoInsumos = [];
+            }
         }
 
         renderizarTabelaRascunho();
         atualizarResumoFinanceiroLocal();
-
     } catch (err) {
         console.error("Erro ao carregar lista de insumos:", err);
     }
@@ -870,6 +890,36 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
     }
 });
 
+document.getElementById('btnReabrirOS')?.addEventListener('click', async function() {
+    const numOS = document.getElementById('txtNumOS').value;
+    const idOS = window.idOSGlobal;
+
+    if (!idOS) return;
+
+    if (!confirm(`⚠️ ATENÇÃO: Deseja realmente REABRIR a O.S. ${numOS}?\nIsso permitirá novas alterações e limpará os dados de conclusão.`)) return;
+
+    try {
+        const payload = {
+            status: 'ABERTA',
+            data_fechamento: null,
+            usuario_fechamento: null
+        };
+
+        const { error } = await client
+            .from('Ordens_Servico')
+            .update(payload)
+            .eq('id', idOS);
+
+        if (error) throw error;
+
+        alert("🔓 O.S. reaberta com sucesso!");
+        window.location.reload();
+
+    } catch (err) {
+        alert("Erro ao reabrir: " + err.message);
+    }
+});
+
 /* ==========================================================================
    7. MODAIS E UTILITÁRIOS FINAIS
    ========================================================================== */
@@ -877,14 +927,12 @@ window.excluirInsumo = async function(idInsumo, idEncaminhamento, index) {
     if (!confirm("Deseja realmente remover este insumo?")) return;
 
     try {
-        // 🚀 Remove da memória local
         if (index !== undefined) {
             rascunhoInsumos.splice(index, 1);
         } else {
             rascunhoInsumos = [];
         }
 
-        // 🚀 Limpa fisicamente do banco de dados
         const idAtivo = idEncaminhamento || window.idEncaminhamentoAtivo;
         if (idAtivo && !String(idAtivo).startsWith('TEMP')) {
             const { error } = await client
@@ -911,7 +959,6 @@ window.excluirInsumo = async function(idInsumo, idEncaminhamento, index) {
     }
 };
 
-// Funções de Modal e Importação de S.S. mantidas conforme original
 async function carregarSSPendentesNoModal() {
     const tbody = document.getElementById('tabelaSS'); 
     if (!tbody) return;
@@ -946,7 +993,6 @@ async function importarDadosDaSSParaOS(ss) {
     const txtDefeito = document.getElementById('txtDefeito'); 
     if (txtDefeito) txtDefeito.value = ss.defeito_relatado || '';
 
-    // 🚀 Lógica para Auto-Gerar o número da O.S. ao importar
     try {
         const dataOS = await dbService.execute(
             client.from('Ordens_Servico')
@@ -966,7 +1012,6 @@ async function importarDadosDaSSParaOS(ss) {
         
         aplicarStatusVisual("ABERTA");
         atualizarTextoBotaoOS(false);
-        console.log("✅ O.S Auto-gerada na Importação:", formatadoOS);
     } catch (err) {
         console.error("Erro ao gerar OS automática na importação:", err);
     }
@@ -1048,3 +1093,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+window.reabrirEncaminhamento = async function(idEnc) {
+    if (!confirm("Deseja REABRIR este encaminhamento para lançar novos insumos?")) return;
+
+    try {
+        await dbService.execute(client.from('OS_Encaminhamentos').update({ 
+            status_enc: 'ABERTO', 
+            data_conclusao: null
+        }).eq('id', idEnc));
+        
+        alert("🔓 Encaminhamento reaberto!");
+        carregarHistoricoEncaminhamentos();
+        window.editarEncaminhamento(idEnc); 
+
+    } catch (err) {
+        alert("Erro ao reabrir encaminhamento: " + err.message);
+    }
+};
