@@ -256,14 +256,14 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
 
             const lblResumo = document.getElementById('lblResumoOS');
             if(lblResumo) lblResumo.innerText = String(os.numero_sequencial).padStart(6, '0');
+              
+            window.atualizarResumoCustosOS(os.id);
             
             carregarHistoricoEncaminhamentos();
             liberarCamposEncaminhamento(false);
             aplicarStatusVisual(os.status);
             atualizarTextoBotaoOS(true);
             
-            window.atualizarResumoCustosOS(os.id);
-
             document.getElementById('txtPrefixo').dispatchEvent(new Event('blur'));
 
             const campoFechamento = document.getElementById('txtDataFechamento');
@@ -300,34 +300,63 @@ document.getElementById('txtPrefixo')?.addEventListener('blur', async function()
 });
 
 /* ==========================================================================
-   NOVA FUNÇÃO: CALCULAR CUSTOS TOTAIS DA O.S
+   FUNÇÃO ATUALIZADA: CALCULAR CUSTOS TOTAIS (HÍBRIDO: ITENS + ENCAMINHAMENTOS)
    ========================================================================== */
 window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0 }) {
-    if (!idOS && extras.pecas === 0 && extras.mo === 0) return;
+    // Se não tiver ID e não tiver rascunho novo, limpa os campos e sai
+    if (!idOS && extras.pecas === 0 && extras.mo === 0) {
+        if(document.getElementById('lblCustoTotal')) document.getElementById('lblCustoTotal').innerText = "R$ 0.00";
+        return;
+    }
 
     try {
-        let pecasBanco = 0;
-        let moBanco = 0;
+        let somaPecas = extras.pecas;
+        let somaMO = extras.mo;
 
         if (idOS) {
-            const itens = await dbService.execute(client.from('itens_servico').select('*').eq('os_id', idOS));
+            // 1. 🚀 Busca na tabela nova (itens_servico)
+            const { data: itens } = await client
+                .from('itens_servico')
+                .select('total, tipo')
+                .eq('os_id', idOS);
+
             itens?.forEach(item => {
-                if (item.tipo === 'PRODUTO') pecasBanco += item.total;
-                else moBanco += item.total; 
+                if (item.tipo === 'PRODUTO') somaPecas += item.total;
+                else somaMO += item.total; 
+            });
+
+            // 2. 🚀 Busca na tabela pai (OS_Encaminhamentos) para pegar valores legados
+            // Isso garante que se o valor estiver "preso" no encaminhamento, ele suba para o resumo
+            const { data: encsLegados } = await client
+                .from('OS_Encaminhamentos')
+                .select('insumo_valor_total, tarefa')
+                .eq('id_os', idOS);
+
+            encsLegados?.forEach(enc => {
+                if (enc.insumo_valor_total > 0) {
+                    // Se a tarefa contiver "MO" ou "SERVICO", jogamos para Mão de Obra
+                    const tarefaRef = String(enc.tarefa).toUpperCase();
+                    if (tarefaRef.includes('MO') || tarefaRef.includes('SERVICO')) {
+                        somaMO += enc.insumo_valor_total;
+                    } else {
+                        somaPecas += enc.insumo_valor_total;
+                    }
+                }
             });
         }
 
-        const totalPecas = pecasBanco + extras.pecas;
-        const totalMO = moBanco + extras.mo;
-        const totalGeral = totalPecas + totalMO;
+        const totalGeral = somaPecas + somaMO;
 
+        // Atualiza os elementos que aparecem na sua imagem de resumo
         const lblPecas = document.getElementById('lblCustoPecas');
         const lblMO = document.getElementById('lblCustoMO');
         const lblTotal = document.getElementById('lblCustoTotal');
 
-        if (lblPecas) lblPecas.innerText = `R$ ${totalPecas.toFixed(2)}`;
-        if (lblMO) lblMO.innerText = `R$ ${totalMO.toFixed(2)}`;
+        if (lblPecas) lblPecas.innerText = `R$ ${somaPecas.toFixed(2)}`;
+        if (lblMO) lblMO.innerText = `R$ ${somaMO.toFixed(2)}`;
         if (lblTotal) lblTotal.innerText = `R$ ${totalGeral.toFixed(2)}`;
+
+        console.log(`📊 Resumo atualizado: Peças R$ ${somaPecas} | MO R$ ${somaMO}`);
 
     } catch (err) {
         console.error("Erro ao atualizar resumo de custos:", err);
