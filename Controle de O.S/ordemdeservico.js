@@ -830,21 +830,41 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 codigo_etapa: document.getElementById('txtCodEtapa').value, 
                 encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
                 cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
-                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim',
-                insumo_codigo: primeiroItem ? primeiroItem.codigo : null,
-                insumo_descricao: primeiroItem ? primeiroItem.descricao : null,
-                insumo_quantidade: primeiroItem ? primeiroItem.quantidade : 0,
-                insumo_valor_total: primeiroItem ? primeiroItem.total : 0
+                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim'
+                // Removemos o insumo_codigo e valor daqui pois agora salvaremos na tabela de itens
             };
 
+            let idEncFinal;
             const idAtivo = String(window.idEncaminhamentoAtivo);
+
             if (idAtivo.startsWith("TEMP")) {
-                await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]));
+                const novoEnc = await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]).select().single());
+                idEncFinal = novoEnc.id;
             } else {
                 await dbService.execute(client.from('OS_Encaminhamentos').update(dadosEnc).eq('id', window.idEncaminhamentoAtivo));
+                idEncFinal = window.idEncaminhamentoAtivo;
+            }
+
+            // 🚀 A MÁGICA PARA MÚLTIPLOS INSUMOS:
+            // Filtramos apenas os itens que ainda não foram persistidos (novos no rascunho)
+            const novosItens = rascunhoInsumos.filter(item => !item.persistido);
+
+            if (novosItens.length > 0) {
+                const pacoteItens = novosItens.map(item => ({
+                    os_id: window.idOSGlobal,
+                    id_encaminhamento: idEncFinal,
+                    tipo: item.tipo,
+                    codigo: item.codigo,
+                    descricao: item.descricao,
+                    quantidade: item.quantidade,
+                    valor_unitario: item.valor_unitario,
+                    total: item.total
+                }));
+
+                await dbService.execute(client.from('itens_servico').insert(pacoteItens));
+                console.log(`${pacoteItens.length} novos insumos salvos com sucesso!`);
             }
         }
-
         if (numSS) {
             await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'EM ANDAMENTO' }).eq('numero_ss', numSS));
         }
