@@ -554,17 +554,29 @@ window.finalizarEncaminhamento = async function(idEnc) {
 async function carregarHistoricoEncaminhamentos() {
     if (!window.idOSGlobal) return;
     try {
-        const lista = await dbService.execute(client.from('OS_Encaminhamentos').select('*, Apoio_Etapas(descricao)').eq('id_os', window.idOSGlobal).order('numero_encaminhamento', { ascending: true }));
+        // 1. Buscamos todos os registros da O.S.
+        const listaRaw = await dbService.execute(
+            client.from('OS_Encaminhamentos')
+            .select('*, Apoio_Etapas(descricao)')
+            .eq('id_os', window.idOSGlobal)
+            .order('numero_encaminhamento', { ascending: true })
+        );
+
         const tbody = document.getElementById('corpoHistoricoEnc');
         if (!tbody) return;
 
-        if (!lista || lista.length === 0) {
+        if (!listaRaw || listaRaw.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhum encaminhamento encontrado.</td></tr>';
             return;
         }
 
+        // 🚀 2. FILTRO MÁGICO: Mantém apenas a primeira ocorrência de cada número de encaminhamento
+        const listaAgrupada = listaRaw.filter((item, index, self) =>
+            index === self.findIndex((t) => t.numero_encaminhamento === item.numero_encaminhamento)
+        );
+
         tbody.innerHTML = ""; 
-        lista.forEach(enc => {
+        listaAgrupada.forEach(enc => {
             const num = String(enc.numero_encaminhamento || 0).padStart(3, '0');
             const nomeTarefa = enc.tarefa || '---';
             const nomeEtapa = enc.Apoio_Etapas?.descricao || enc.codigo_etapa || '---';
@@ -652,13 +664,15 @@ document.getElementById('btnAdicionarInsumo')?.addEventListener('click', () => {
 
     if (qtd <= 0) return alert("Informe a quantidade!");
 
+    const totalCalculado = Number((qtd * valor).toFixed(2));
+
     const item = { 
     tipo: window.tipoBuscaAtual, 
     codigo: document.getElementById('txtCodInsumo').value, 
     descricao: document.getElementById('txtDescInsumo').value, 
     quantidade: qtd, 
     valor_unitario: valor, 
-    total: Number((qtd * valor).toFixed(2)) 
+    total: totalCalculado 
 };
 
     rascunhoInsumos.push(item);
@@ -695,8 +709,8 @@ function renderizarTabelaRascunho() {
                 <td>${item.codigo}</td>
                 <td>${item.descricao}</td>
                 <td>${item.quantidade}</td>
-                <td><strong>R$ ${item.total.toFixed(2)}</strong></td> <td class="text-center">
-                    <button class="btn-remove-rascunho" onclick="window.excluirInsumo(null, null, ${index})">×</button>
+                <td><strong>R$ ${Number(item.total || 0).toFixed(2)}</strong></td>
+                    <button class="btn-remove-rascunho" onclick="window.excluirInsumo('${item.id_banco || ""}', null, ${index})">×</button>
                 </td>
             </tr>`;
     });
@@ -712,58 +726,52 @@ function atualizarResumoFinanceiroLocal() {
     let rascunhoPecas = 0;
     let rascunhoMO = 0;
 
-    rascunhoInsumos.forEach(item => {
-        if (item.tipo === 'PRODUTO') rascunhoPecas += item.total;
-        else rascunhoMO += item.total;
+   rascunhoInsumos.forEach(item => {
+        if (!item.persistido) { 
+            if (item.tipo === 'PRODUTO') rascunhoPecas += item.total;
+            else rascunhoMO += item.total;
+        }
     });
 
     window.atualizarResumoCustosOS(window.idOSGlobal, { pecas: rascunhoPecas, mo: rascunhoMO });
 }
-
 async function carregarInsumosDoEncaminhamento(idEnc) {
     try {
-        // 🚀 Busca TODOS os itens vinculados a este ID de encaminhamento
+        // 1. Descobre o número do encaminhamento que foi clicado
+        const { data: ref } = await client
+            .from('OS_Encaminhamentos')
+            .select('numero_encaminhamento')
+            .eq('id', idEnc)
+            .single();
+
+        if (!ref) return;
+
+        // 2. Busca TODOS os insumos desse número para a O.S. atual
         const { data: itens, error } = await client
-            .from('itens_servico')
+            .from('OS_Encaminhamentos')
             .select('*')
-            .eq('id_encaminhamento', idEnc);
+            .eq('id_os', window.idOSGlobal)
+            .eq('numero_encaminhamento', ref.numero_encaminhamento);
 
         if (error) throw error;
 
-        // 🚀 Sincroniza o rascunho com a lista completa vinda do banco + Plano B legado
-        if (itens && itens.length > 0) {
-            rascunhoInsumos = itens.map(item => ({
-                id_banco: item.id,
-                tipo: item.tipo,
-                codigo: item.codigo,
-                descricao: item.descricao,
-                quantidade: item.quantidade,
-                total: item.total,
-                persistido: true
-            }));
-        } else {
-            const encPai = await client.from('OS_Encaminhamentos').select('insumo_codigo, insumo_descricao, insumo_quantidade, insumo_valor_total').eq('id', idEnc).single();
-            if (encPai.data && encPai.data.insumo_codigo) {
-                rascunhoInsumos = [{
-                    tipo: 'PRODUTO',
-                    codigo: encPai.data.insumo_codigo,
-                    descricao: encPai.data.insumo_descricao,
-                    quantidade: encPai.data.insumo_quantidade,
-                    total: encPai.data.insumo_valor_total,
-                    persistido: true
-                }];
-            } else {
-                rascunhoInsumos = [];
-            }
-        }
+        // 3. Alimenta o rascunho com o id_banco para permitir exclusão individual
+        rascunhoInsumos = itens.map(item => ({
+            id_banco: item.id,
+            tipo: 'PRODUTO', 
+            codigo: item.insumo_codigo,
+            descricao: item.insumo_descricao,
+            quantidade: item.insumo_quantidade,
+            total: item.insumo_valor_total,
+            persistido: true
+        }));
 
         renderizarTabelaRascunho();
         atualizarResumoFinanceiroLocal();
     } catch (err) {
-        console.error("Erro ao carregar lista de insumos:", err);
+        console.error("Erro ao sincronizar rascunho:", err);
     }
 }
-
 window.vincularSS = function(numero, prefixo, defeito) {
     document.getElementById('txtNumSS').value = numero;
     document.getElementById('txtPrefixo').value = prefixo;
@@ -823,48 +831,63 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         window.idOSGlobal = osOficial.id;
 
         // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
-        if (window.idEncaminhamentoAtivo) {
-            const dadosEnc = { 
-                id_os: window.idOSGlobal,
-                tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
-                codigo_etapa: document.getElementById('txtCodEtapa').value, 
-                encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
-                cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
-                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim'
-                // Removemos o insumo_codigo e valor daqui pois agora salvaremos na tabela de itens
-            };
+  
+          // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
+                if (window.idEncaminhamentoAtivo) {
+                    let numEncFinal;
+                    const campoNumEnc = document.getElementById('txtNumEncaminhamento');
+                    const valorTela = campoNumEnc.value;
 
-            let idEncFinal;
-            const idAtivo = String(window.idEncaminhamentoAtivo);
+                    // 🚀 LÓGICA DE SEQUENCIAL DINÂMICO
+                    if (valorTela === "PENDENTE" || valorTela === "Nenhum Selecionado") {
+                        // Vai no banco e pergunta: "Qual o maior número de encaminhamento dessa OS?"
+                        const { data: ultimoEnc } = await client
+                            .from('OS_Encaminhamentos')
+                            .select('numero_encaminhamento')
+                            .order('numero_encaminhamento', { ascending: false })
+                            .limit(1);
 
-            if (idAtivo.startsWith("TEMP")) {
-                const novoEnc = await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosEnc]).select().single());
-                idEncFinal = novoEnc.id;
-            } else {
-                await dbService.execute(client.from('OS_Encaminhamentos').update(dadosEnc).eq('id', window.idEncaminhamentoAtivo));
-                idEncFinal = window.idEncaminhamentoAtivo;
-            }
+                        // Se o último foi 118, numEncFinal vira 119. Se não houver nenhum, vira 1.
+                       numEncFinal = (ultimoEnc && ultimoEnc.length > 0) ? (Number(ultimoEnc[0].numero_encaminhamento) + 1) : 1;
+                    } else {
+                        // Se já tem número (edição), mantém o que está na tela
+                        numEncFinal = parseInt(valorTela);
+                    }
 
-            // 🚀 A MÁGICA PARA MÚLTIPLOS INSUMOS:
-            // Filtramos apenas os itens que ainda não foram persistidos (novos no rascunho)
-            const novosItens = rascunhoInsumos.filter(item => !item.persistido);
+                    const dadosBase = { 
+                        id_os: window.idOSGlobal,
+                        numero_encaminhamento: numEncFinal, 
+                        tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
+                        codigo_etapa: document.getElementById('txtCodEtapa').value, 
+                        encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
+                        cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
+                        servico_externo: document.getElementById('cboOficinaExterna').value === 'sim',
+                        status_enc: 'ABERTO'
+                    };
 
-            if (novosItens.length > 0) {
-                const pacoteItens = novosItens.map(item => ({
-                    os_id: window.idOSGlobal,
-                    id_encaminhamento: idEncFinal,
-                    tipo: item.tipo,
-                    codigo: item.codigo,
-                    descricao: item.descricao,
-                    quantidade: item.quantidade,
-                    valor_unitario: item.valor_unitario,
-                    total: item.total
-                }));
+                    const novosItens = rascunhoInsumos.filter(item => !item.persistido);
 
-                await dbService.execute(client.from('itens_servico').insert(pacoteItens));
-                console.log(`${pacoteItens.length} novos insumos salvos com sucesso!`);
-            }
-        }
+                    if (novosItens.length > 0) {
+                        // Gera uma linha para cada novo insumo com o mesmo número sequencial
+                        const pacoteLinhas = novosItens.map(item => ({
+                            ...dadosBase,
+                            insumo_codigo: item.codigo,
+                            insumo_descricao: item.descricao,
+                            insumo_quantidade: item.quantidade,
+                            insumo_valor_total: item.total
+                        }));
+
+                        await dbService.execute(client.from('OS_Encaminhamentos').insert(pacoteLinhas));
+                        campoNumEnc.value = String(numEncFinal).padStart(3, '0');
+                    } else if (String(window.idEncaminhamentoAtivo).startsWith("TEMP")) {
+                        // Caso salve sem insumo
+                        await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosBase]));
+                    } else {
+                        // Atualização de dados de texto
+                        await dbService.execute(client.from('OS_Encaminhamentos').update(dadosBase).eq('id', window.idEncaminhamentoAtivo));
+                    }
+                }
+
         if (numSS) {
             await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'EM ANDAMENTO' }).eq('numero_ss', numSS));
         }
@@ -972,42 +995,34 @@ document.getElementById('btnReabrirOS')?.addEventListener('click', async functio
 /* ==========================================================================
    7. MODAIS E UTILITÁRIOS FINAIS
    ========================================================================== */
-window.excluirInsumo = async function(idInsumo, idEncaminhamento, index) {
+window.excluirInsumo = async function(idInsumoBanco, idEncaminhamento, index) {
+    // Log para você conferir no F12 se o ID está vindo
+    console.log("ID para excluir:", idInsumoBanco);
+
     if (!confirm("Deseja realmente remover este insumo?")) return;
 
     try {
-        if (index !== undefined) {
-            rascunhoInsumos.splice(index, 1);
-        } else {
-            rascunhoInsumos = [];
-        }
-
-        const idAtivo = idEncaminhamento || window.idEncaminhamentoAtivo;
-        if (idAtivo && !String(idAtivo).startsWith('TEMP')) {
+        // Verifica se o ID existe e não é uma string vazia ou "null"
+        if (idInsumoBanco && idInsumoBanco !== "null" && idInsumoBanco !== "") {
             const { error } = await client
                 .from('OS_Encaminhamentos')
-                .update({ 
-                    insumo_codigo: null, 
-                    insumo_descricao: null, 
-                    insumo_quantidade: 0, 
-                    insumo_valor_total: 0 
-                })
-                .eq('id', idAtivo);
+                .delete()
+                .eq('id', idInsumoBanco);
 
             if (error) throw error;
+            console.log("🗑️ Removido do banco de dados!");
         }
 
-        alert("🗑️ Insumo removido com sucesso!");
+        // Remove da lista visual
+        rascunhoInsumos.splice(index, 1);
         
         renderizarTabelaRascunho();
         atualizarResumoFinanceiroLocal();
 
     } catch (err) {
-        console.error("Erro ao excluir:", err);
-        alert("Erro ao excluir no banco: " + err.message);
+        alert("Erro ao excluir: " + err.message);
     }
 };
-
 async function carregarSSPendentesNoModal() {
     const tbody = document.getElementById('tabelaSS'); 
     if (!tbody) return;
