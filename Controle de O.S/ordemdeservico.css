@@ -223,7 +223,7 @@ textarea {
 }
 
 /* =========================================================
-   ESTILO DO CHECKBOX CUSTOMIZADO (DANO SEVERO)
+   ESTILO DO CHECKBOX CUSTOMIZADO (DANO SEVERO E VEÍCULO DISPONÍVEL)
    ========================================================= */
 
 /* Alinhamento perfeito do grupo (caixinha + texto) */
@@ -251,14 +251,14 @@ textarea {
 
 /* 2. Efeito ao passar o mouse por cima (Hover) */
 .custom-checkbox:hover {
-    border-color: #ef4444; /* Borda fica vermelha para chamar atenção */
+    border-color: #16a34a; /* Borda fica vermelha para chamar atenção */
     box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); /* Brilho vermelho de fundo */
 }
 
 /* 3. O que acontece quando ele é MARCADO (Checked) */
 .custom-checkbox:checked {
-    background-color: #ef4444; /* Fundo preenche de vermelho */
-    border-color: #ef4444;
+    background-color: #16a34a; /* Fundo preenche de vermelho */
+    border-color: #183b48;
 }
 
 /* 4. Desenhando o "Visto" (Check) com CSS puro por cima da caixa vermelha */
@@ -282,6 +282,30 @@ textarea {
     display: flex;
     align-items: center;
     gap: 6px; /* Espaço entre o ícone do triângulo e o texto */
+}
+
+/* Quando o checkbox interno for marcado, altera o fundo do botão container inteiro */
+.btn-toggle-large:has(.custom-checkbox-disponivel:checked) {
+    background-color: #f0fdf4; /* Verde bem claro de fundo */
+    border-color: var(--success); /* Borda verde oficial da Maas */
+}
+
+/* Garante o alinhamento vertical perfeito dos elementos no mobile e desktop */
+.veiculo-disponivel-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 42px; /* Força a mesma altura dos inputs comuns do seu formulário */
+    padding: 0 12px !important;
+}
+
+/* Ajuste fino para o campo de data interno não herdar margens indesejadas */
+.veiculo-disponivel-toggle input[type="text"].readonly-field {
+    margin: 0 !important;
+    height: 30px !important;
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
 }
 
 textarea {
