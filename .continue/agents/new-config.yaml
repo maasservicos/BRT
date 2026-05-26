@@ -1,0 +1,15 @@
+name: Example Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Gemini 2.5 Flash
+    provider: gemini
+    model: gemini-2.5-flash
+    apiKey: AIzaSyAphZopXloLGfRBzT7naiZOUNCTc3F80k0
+
+tabAutocompleteModel:
+  name: Gemini 2.5 Flash
+  provider: gemini
+  model: gemini-2.5-flash
+  apiKey: AIzaSyAphZopXloLGfRBzT7naiZOUNCTc3F80k0

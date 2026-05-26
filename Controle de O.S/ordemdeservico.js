@@ -86,6 +86,21 @@ document.addEventListener('DOMContentLoaded', function() {
         txtDefeito.addEventListener('input', () => { txtObs.value = txtDefeito.value; });
     }
 
+    const chkDisponivel = document.getElementById('chkVeiculoDisponivel');
+    const txtDataDisp = document.getElementById('txtDataDisponivel');
+
+    if (chkDisponivel && txtDataDisp) {
+        chkDisponivel.addEventListener('change', function() {
+            if (this.checked) {
+                const agora = new Date();
+                const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                txtDataDisp.value = dataFormatada;
+            } else {
+                txtDataDisp.value = ""; // Limpa se desmarcar
+            }
+        });
+    }
+
     document.getElementById('btnLupaInsumo')?.addEventListener('click', () => {
         document.getElementById('modalInsumos').classList.remove('hidden');
         document.getElementById('txtBuscaInsumo').value = "";
@@ -256,6 +271,28 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
 
             const lblResumo = document.getElementById('lblResumoOS');
             if(lblResumo) lblResumo.innerText = String(os.numero_sequencial).padStart(6, '0');
+
+            const chkDisp = document.getElementById('chkVeiculoDisponivel');
+            if (chkDisp) {
+                chkDisp.checked = (os.is_veiculo_disponivel === true);
+            }
+
+            const campoDataDisp = document.getElementById('txtDataDisponivel');
+            if (campoDataDisp && os.data_veiculo_disponivel) {
+                // 🚀 CORREÇÃO DE FUSO: Se o banco traz "2026-05-26T10:05:00", vamos tratar como texto puro
+                // Isso evita que o navegador tente subtrair as 3 horas do fuso de Goiânia
+                try {
+                    const [dataParte, horaParte] = os.data_veiculo_disponivel.split('T');
+                    const [ano, mes, dia] = dataParte.split('-');
+                    const horaMinuto = horaParte.substring(0, 5); // Pega apenas o "HH:MM"
+                    
+                    campoDataDisp.value = `${dia}/${mes}/${ano} ${horaMinuto}`;
+                } catch (e) {
+                    // Plano B caso venha em outro formato do banco
+                    const d = new Date(os.data_veiculo_disponivel);
+                    campoDataDisp.value = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                }
+            }
               
             window.atualizarResumoCustosOS(os.id);
             
@@ -303,7 +340,6 @@ document.getElementById('txtPrefixo')?.addEventListener('blur', async function()
    FUNÇÃO ATUALIZADA: CALCULAR CUSTOS TOTAIS (HÍBRIDO: ITENS + ENCAMINHAMENTOS)
    ========================================================================== */
 window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0 }) {
-    // Se não tiver ID e não tiver rascunho novo, limpa os campos e sai
     if (!idOS && extras.pecas === 0 && extras.mo === 0) {
         if(document.getElementById('lblCustoTotal')) document.getElementById('lblCustoTotal').innerText = "R$ 0.00";
         return;
@@ -314,7 +350,6 @@ window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0
         let somaMO = extras.mo;
 
         if (idOS) {
-            // 1. 🚀 Busca na tabela nova (itens_servico)
             const { data: itens } = await client
                 .from('itens_servico')
                 .select('total, tipo')
@@ -325,8 +360,6 @@ window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0
                 else somaMO += item.total; 
             });
 
-            // 2. 🚀 Busca na tabela pai (OS_Encaminhamentos) para pegar valores legados
-            // Isso garante que se o valor estiver "preso" no encaminhamento, ele suba para o resumo
             const { data: encsLegados } = await client
                 .from('OS_Encaminhamentos')
                 .select('insumo_valor_total, tarefa')
@@ -334,7 +367,6 @@ window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0
 
             encsLegados?.forEach(enc => {
                 if (enc.insumo_valor_total > 0) {
-                    // Se a tarefa contiver "MO" ou "SERVICO", jogamos para Mão de Obra
                     const tarefaRef = String(enc.tarefa).toUpperCase();
                     if (tarefaRef.includes('MO') || tarefaRef.includes('SERVICO')) {
                         somaMO += enc.insumo_valor_total;
@@ -347,7 +379,6 @@ window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0
 
         const totalGeral = somaPecas + somaMO;
 
-        // Atualiza os elementos que aparecem na sua imagem de resumo
         const lblPecas = document.getElementById('lblCustoPecas');
         const lblMO = document.getElementById('lblCustoMO');
         const lblTotal = document.getElementById('lblCustoTotal');
@@ -356,7 +387,7 @@ window.atualizarResumoCustosOS = async function(idOS, extras = { pecas: 0, mo: 0
         if (lblMO) lblMO.innerText = `R$ ${somaMO.toFixed(2)}`;
         if (lblTotal) lblTotal.innerText = `R$ ${totalGeral.toFixed(2)}`;
 
-        console.log(`📊 Resumo atualizado: Peças R$ ${somaPecas} | MO R$ ${somaMO}`);
+        console.log(`📊 Resumo updated: Peças R$ ${somaPecas} | MO R$ ${somaMO}`);
 
     } catch (err) {
         console.error("Erro ao atualizar resumo de custos:", err);
@@ -460,7 +491,7 @@ document.getElementById('btnSalvarEncaminhamento')?.addEventListener('click', as
             await dbService.execute(client.from('OS_Encaminhamentos').update({
                 tarefa, codigo_etapa: etapa, encaminhamento_descricao: descricao, servico_externo: servicoExterno, cod_fornecedor: codFornecedor
             }).eq('id', window.idEncaminhamentoAtivo));
-            alert("Encaminhamento atualizado!");
+            alert("Encaminhamento updated!");
         } else {
             const encs = await dbService.execute(client.from('OS_Encaminhamentos').select('numero_encaminhamento').eq('id_os', window.idOSGlobal));
             const proximoNumero = (encs?.length || 0) + 1;
@@ -507,7 +538,6 @@ window.editarEncaminhamento = async function(idEnc) {
             }
         }
         
-        // 🚀 Ajustado: await para carregar insumos sincronizado com a edição
         await carregarInsumosDoEncaminhamento(idEnc);
         
         document.getElementById('txtNumEncaminhamento').scrollIntoView({ behavior: 'smooth' });
@@ -554,7 +584,6 @@ window.finalizarEncaminhamento = async function(idEnc) {
 async function carregarHistoricoEncaminhamentos() {
     if (!window.idOSGlobal) return;
     try {
-        // 1. Buscamos todos os registros da O.S.
         const listaRaw = await dbService.execute(
             client.from('OS_Encaminhamentos')
             .select('*, Apoio_Etapas(descricao)')
@@ -570,7 +599,6 @@ async function carregarHistoricoEncaminhamentos() {
             return;
         }
 
-        // 🚀 2. FILTRO MÁGICO: Mantém apenas a primeira ocorrência de cada número de encaminhamento
         const listaAgrupada = listaRaw.filter((item, index, self) =>
             index === self.findIndex((t) => t.numero_encaminhamento === item.numero_encaminhamento)
         );
@@ -667,13 +695,13 @@ document.getElementById('btnAdicionarInsumo')?.addEventListener('click', () => {
     const totalCalculado = Number((qtd * valor).toFixed(2));
 
     const item = { 
-    tipo: window.tipoBuscaAtual, 
-    codigo: document.getElementById('txtCodInsumo').value, 
-    descricao: document.getElementById('txtDescInsumo').value, 
-    quantidade: qtd, 
-    valor_unitario: valor, 
-    total: totalCalculado 
-};
+        tipo: window.tipoBuscaAtual, 
+        codigo: document.getElementById('txtCodInsumo').value, 
+        descricao: document.getElementById('txtDescInsumo').value, 
+        quantidade: qtd, 
+        valor_unitario: valor, 
+        total: totalCalculado 
+    };
 
     rascunhoInsumos.push(item);
     document.getElementById('txtCodInsumo').value = ""; 
@@ -703,13 +731,15 @@ function renderizarTabelaRascunho() {
             ? `<span style="background: #ffffff; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px;">OFICIAL</span>` 
             : `<span style="background: #ffffff; color: #854d0e; padding: 2px 6px; border-radius: 4px; font-size: 10px;">RASCUNHO</span>`;
 
+        // 🚀 Corrigido: Fechamento correto da tag td na exclusão do insumo
         tbody.innerHTML += `
             <tr class="row-rascunho">
                 <td>${item.tipo} ${badge}</td>
                 <td>${item.codigo}</td>
                 <td>${item.descricao}</td>
                 <td>${item.quantidade}</td>
-                <td><strong>R$ ${Number(item.total || 0).toFixed(2)}</strong></td>
+                <td><strong>R$ ${Number(item.total || 0).toFixed(2)}</strong></td> 
+                <td class="text-center">
                     <button class="btn-remove-rascunho" onclick="window.excluirInsumo('${item.id_banco || ""}', null, ${index})">×</button>
                 </td>
             </tr>`;
@@ -735,9 +765,9 @@ function atualizarResumoFinanceiroLocal() {
 
     window.atualizarResumoCustosOS(window.idOSGlobal, { pecas: rascunhoPecas, mo: rascunhoMO });
 }
+
 async function carregarInsumosDoEncaminhamento(idEnc) {
     try {
-        // 1. Descobre o número do encaminhamento que foi clicado
         const { data: ref } = await client
             .from('OS_Encaminhamentos')
             .select('numero_encaminhamento')
@@ -746,7 +776,6 @@ async function carregarInsumosDoEncaminhamento(idEnc) {
 
         if (!ref) return;
 
-        // 2. Busca TODOS os insumos desse número para a O.S. atual
         const { data: itens, error } = await client
             .from('OS_Encaminhamentos')
             .select('*')
@@ -755,7 +784,6 @@ async function carregarInsumosDoEncaminhamento(idEnc) {
 
         if (error) throw error;
 
-        // 3. Alimenta o rascunho com o id_banco para permitir exclusão individual
         rascunhoInsumos = itens.map(item => ({
             id_banco: item.id,
             tipo: 'PRODUTO', 
@@ -772,6 +800,7 @@ async function carregarInsumosDoEncaminhamento(idEnc) {
         console.error("Erro ao sincronizar rascunho:", err);
     }
 }
+
 window.vincularSS = function(numero, prefixo, defeito) {
     document.getElementById('txtNumSS').value = numero;
     document.getElementById('txtPrefixo').value = prefixo;
@@ -803,6 +832,16 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
         const numSS = document.getElementById('txtNumSS')?.value || null; 
         const danoSevero = document.getElementById('chkDanoSevero')?.checked || false;
+        const veiculoDisponivel = document.getElementById('chkVeiculoDisponivel')?.checked || false;
+        const campoDataDisp = document.getElementById('txtDataDisponivel')?.value || null;
+        
+        // 🚀 TRATAMENTO DA DATA DO COMPONENTE: Converte PT-BR para ISO string
+        let dataDisponivelISO = null;
+        if (campoDataDisp) {
+            const [data, hora] = campoDataDisp.split(' ');
+            const [dia, mes, ano] = data.split('/');
+            dataDisponivelISO = `${ano}-${mes}-${dia}T${hora}:00`;
+        }
 
         // 1. SALVA OU ATUALIZA A O.S. PRINCIPAL
         if (osExistente) {
@@ -812,7 +851,9 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 km_atual: parseInt(document.getElementById('numKm').value) || 0,
                 link_documentos: linkDoc,
                 numero_ss: numSS,
-                is_dano_severo: danoSevero
+                is_dano_severo: danoSevero,
+                is_veiculo_disponivel: veiculoDisponivel,
+                data_veiculo_disponivel: dataDisponivelISO
             }).eq('id', osExistente.id).select().single());
         } else {
             osOficial = await dbService.execute(client.from('Ordens_Servico').insert([{
@@ -824,69 +865,63 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
                 link_documentos: linkDoc,
                 numero_ss: numSS,
                 usuario_abertura: usuarioLogado.nome,
-                is_dano_severo: danoSevero
+                is_dano_severo: danoSevero,
+                is_veiculo_disponivel: veiculoDisponivel,
+                data_veiculo_disponivel: dataDisponivelISO
             }]).select().single());
         }
 
         window.idOSGlobal = osOficial.id;
 
         // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
-  
-          // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
-                if (window.idEncaminhamentoAtivo) {
-                    let numEncFinal;
-                    const campoNumEnc = document.getElementById('txtNumEncaminhamento');
-                    const valorTela = campoNumEnc.value;
+        if (window.idEncaminhamentoAtivo) {
+            let numEncFinal;
+            const campoNumEnc = document.getElementById('txtNumEncaminhamento');
+            const valorTela = campoNumEnc.value;
 
-                    // 🚀 LÓGICA DE SEQUENCIAL DINÂMICO
-                    if (valorTela === "PENDENTE" || valorTela === "Nenhum Selecionado") {
-                        // Vai no banco e pergunta: "Qual o maior número de encaminhamento dessa OS?"
-                        const { data: ultimoEnc } = await client
-                            .from('OS_Encaminhamentos')
-                            .select('numero_encaminhamento')
-                            .order('numero_encaminhamento', { ascending: false })
-                            .limit(1);
+            // 🚀 LÓGICA DE SEQUENCIAL DINÂMICO GLOBAL CONFORME REQUISITO
+            if (valorTela === "PENDENTE" || valorTela === "Nenhum Selecionado") {
+                const { data: ultimoEnc } = await client
+                    .from('OS_Encaminhamentos')
+                    .select('numero_encaminhamento')
+                    .order('numero_encaminhamento', { ascending: false })
+                    .limit(1);
 
-                        // Se o último foi 118, numEncFinal vira 119. Se não houver nenhum, vira 1.
-                       numEncFinal = (ultimoEnc && ultimoEnc.length > 0) ? (Number(ultimoEnc[0].numero_encaminhamento) + 1) : 1;
-                    } else {
-                        // Se já tem número (edição), mantém o que está na tela
-                        numEncFinal = parseInt(valorTela);
-                    }
+                numEncFinal = (ultimoEnc && ultimoEnc.length > 0) ? (Number(ultimoEnc[0].numero_encaminhamento) + 1) : 1;
+            } else {
+                numEncFinal = parseInt(valorTela);
+            }
 
-                    const dadosBase = { 
-                        id_os: window.idOSGlobal,
-                        numero_encaminhamento: numEncFinal, 
-                        tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
-                        codigo_etapa: document.getElementById('txtCodEtapa').value, 
-                        encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
-                        cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
-                        servico_externo: document.getElementById('cboOficinaExterna').value === 'sim',
-                        status_enc: 'ABERTO'
-                    };
+            const dadosBase = { 
+                id_os: window.idOSGlobal,
+                numero_encaminhamento: numEncFinal, 
+                tarefa: document.getElementById('cboTarefaEncaminhamento').value, 
+                codigo_etapa: document.getElementById('txtCodEtapa').value, 
+                encaminhamento_descricao: document.getElementById('txtDefeitoEncaminhamento').value, 
+                cod_fornecedor: document.getElementById('txtCodFornecedor').value, 
+                servico_externo: document.getElementById('cboOficinaExterna').value === 'sim',
+                status_enc: 'ABERTO'
+            };
 
-                    const novosItens = rascunhoInsumos.filter(item => !item.persistido);
+            const novosItens = rascunhoInsumos.filter(item => !item.persistido);
 
-                    if (novosItens.length > 0) {
-                        // Gera uma linha para cada novo insumo com o mesmo número sequencial
-                        const pacoteLinhas = novosItens.map(item => ({
-                            ...dadosBase,
-                            insumo_codigo: item.codigo,
-                            insumo_descricao: item.descricao,
-                            insumo_quantidade: item.quantidade,
-                            insumo_valor_total: item.total
-                        }));
+            if (novosItens.length > 0) {
+                const pacoteLinhas = novosItens.map(item => ({
+                    ...dadosBase,
+                    insumo_codigo: item.codigo,
+                    insumo_descricao: item.descricao,
+                    insumo_quantidade: item.quantidade,
+                    insumo_valor_total: item.total
+                }));
 
-                        await dbService.execute(client.from('OS_Encaminhamentos').insert(pacoteLinhas));
-                        campoNumEnc.value = String(numEncFinal).padStart(3, '0');
-                    } else if (String(window.idEncaminhamentoAtivo).startsWith("TEMP")) {
-                        // Caso salve sem insumo
-                        await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosBase]));
-                    } else {
-                        // Atualização de dados de texto
-                        await dbService.execute(client.from('OS_Encaminhamentos').update(dadosBase).eq('id', window.idEncaminhamentoAtivo));
-                    }
-                }
+                await dbService.execute(client.from('OS_Encaminhamentos').insert(pacoteLinhas));
+                campoNumEnc.value = String(numEncFinal).padStart(3, '0');
+            } else if (String(window.idEncaminhamentoAtivo).startsWith("TEMP")) {
+                await dbService.execute(client.from('OS_Encaminhamentos').insert([dadosBase]));
+            } else {
+                await dbService.execute(client.from('OS_Encaminhamentos').update(dadosBase).eq('id', window.idEncaminhamentoAtivo));
+            }
+        }
 
         if (numSS) {
             await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'EM ANDAMENTO' }).eq('numero_ss', numSS));
@@ -996,13 +1031,11 @@ document.getElementById('btnReabrirOS')?.addEventListener('click', async functio
    7. MODAIS E UTILITÁRIOS FINAIS
    ========================================================================== */
 window.excluirInsumo = async function(idInsumoBanco, idEncaminhamento, index) {
-    // Log para você conferir no F12 se o ID está vindo
     console.log("ID para excluir:", idInsumoBanco);
 
     if (!confirm("Deseja realmente remover este insumo?")) return;
 
     try {
-        // Verifica se o ID existe e não é uma string vazia ou "null"
         if (idInsumoBanco && idInsumoBanco !== "null" && idInsumoBanco !== "") {
             const { error } = await client
                 .from('OS_Encaminhamentos')
@@ -1013,7 +1046,6 @@ window.excluirInsumo = async function(idInsumoBanco, idEncaminhamento, index) {
             console.log("🗑️ Removido do banco de dados!");
         }
 
-        // Remove da lista visual
         rascunhoInsumos.splice(index, 1);
         
         renderizarTabelaRascunho();
@@ -1023,6 +1055,7 @@ window.excluirInsumo = async function(idInsumoBanco, idEncaminhamento, index) {
         alert("Erro ao excluir: " + err.message);
     }
 };
+
 async function carregarSSPendentesNoModal() {
     const tbody = document.getElementById('tabelaSS'); 
     if (!tbody) return;
@@ -1107,7 +1140,7 @@ async function carregarEtapasNoModal(termo) {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${etapa.codigo_etapa}</td><td>${etapa.descricao}</td>`;
             tr.onclick = () => {
-                document.getElementById('txtCodEtapa').value = etapa.codigo_etapa;
+                document.getElementById('txtCodEtapa').value = eta_pa.codigo_etapa;
                 document.getElementById('txtDescricaoEtapa').value = etapa.descricao;
                 document.getElementById('modalEtapas').classList.add('hidden');
             };

@@ -73,6 +73,18 @@
                                     🚨 Dano Severo
                                 </label>
                         </div>
+                      <div class="col-3">
+                            <label>Disponibilidade do Veículo</label>
+                            
+                            <div class="btn-toggle-large veiculo-disponivel-toggle" id="lblVeiculoDisponivel">
+                                <label class="checkbox-group" style="margin: 0; padding: 0;">
+                                    <input type="checkbox" id="chkVeiculoDisponivel" class="custom-checkbox custom-checkbox-disponivel">
+                                    <span style="font-size: 14px; font-weight: 600; color: var(--text-main); cursor: pointer;"></span>
+                                </label>
+                                
+                                <input id="txtDataDisponivel" type="text" class="readonly-field text-center" placeholder="--/--/---- --:--" style="width: 150px; padding: 6px 10px;" readonly>
+                            </div>
+                        </div>
                         <div class="col-3">
                              <label for="txtLimpar">Limpar Tela</label>
                              <button type="reset" class="btn-secondary" onclick="window.location.reload()">🧹</button>
@@ -233,7 +245,7 @@
                     <h2>5. Insumos (Peças, Serviços & Mão de Obra)</h2>
                     <p class="help">Selecione o tipo de insumo para abrir a consulta padrão ou digite o código.</p>
 
-                    <div class="actions insumo-categories" id="">
+                    <div class="actions insumo-categories">
                         <button type="button" class="btn-ghost" onclick="configurarTipo('PRODUTO')">📦 Peças</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('SERVICO')">🛠️ Serviços</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('TECNICO')">👤 Mão de Obra</button>
@@ -258,7 +270,7 @@
                             <input id="numQtdInsumoLinha" type="text" value="1" min="0.1" step="0.1" />
                         </div>
                         <div class="col-2">
-                            <label>Valor / Custo</label>
+                            <label for="numValorInsumo">Valor / Custo</label>
                             <input id="numValorInsumo" type="number" step="0.01" placeholder="0,00" />
                         </div>
                         <div class="col-2" style="display: flex; align-items: flex-end;">
@@ -411,7 +423,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div>          
     </div>
 </div>
 
@@ -451,5 +463,11 @@
     </footer>
 
     <script type="module" src="ordemdeservico.js"></script>
+</body>
+</html>
+
+    <script type="module" src="ordemdeservico.js"></script>
+</body>
+</html>ript type="module" src="ordemdeservico.js"></script>
 </body>
 </html>
