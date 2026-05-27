@@ -818,9 +818,6 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         btn.disabled = true;
         btn.innerHTML = "💾 Salvando...";
 
-        const temInsumo = rascunhoInsumos && rascunhoInsumos.length > 0;
-        const primeiroItem = temInsumo ? rascunhoInsumos[0] : null;
-
         const numOS = parseInt(document.getElementById('txtNumOS').value);
         if (!numOS) throw new Error("Número da O.S. inválido.");
 
@@ -833,7 +830,6 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         const veiculoDisponivel = document.getElementById('chkVeiculoDisponivel')?.checked || false;
         const campoDataDisp = document.getElementById('txtDataDisponivel')?.value || null;
         
-        // 🚀 TRATAMENTO DA DATA DO COMPONENTE: Converte PT-BR para ISO string
         let dataDisponivelISO = null;
         if (campoDataDisp) {
             const [data, hora] = campoDataDisp.split(' ');
@@ -872,12 +868,12 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         window.idOSGlobal = osOficial.id;
         
         // ===================================================================
-        // 💾 GRAVAÇÃO DO SERVIÇO VIA API (INTEGRAÇÃO BACKEND LOCAL)
+        // 💾 CORREÇÃO DA ROTA: Salva o texto sincronizado na rota correta
         // ===================================================================
         const campoServico = document.getElementById('txtServicoRealizado');
         if (campoServico && campoServico.value.trim() !== "") {
             try {
-                await fetch(`https://sistema-brt-sombra.onrender.com`, {
+                await fetch(`https://sistema-brt-sombra.onrender.com/api/os/${numOS}/gravar-servico`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ servico_realizado: campoServico.value.trim() })
@@ -894,7 +890,6 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
             const campoNumEnc = document.getElementById('txtNumEncaminhamento');
             const valorTela = campoNumEnc.value;
 
-            // 🚀 LÓGICA DE SEQUENCIAL DINÂMICO GLOBAL CONFORME REQUISITO
             if (valorTela === "PENDENTE" || valorTela === "Nenhum Selecionado") {
                 const { data: ultimoEnc } = await client
                     .from('OS_Encaminhamentos')
@@ -956,6 +951,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
 document.getElementById('btnFinalizarOS')?.addEventListener('click', async function() {
     const num = document.getElementById('txtNumOS').value;
     const idOS = window.idOSGlobal;
+    const numOS_int = parseInt(num); // 🚀 DEFINIÇÃO ADICIONADA: Evita erro de variável não declarada
 
     if (!idOS) return alert("Nenhuma O.S. carregada para finalizar.");
 
@@ -984,14 +980,14 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             return;
         }
 
-        // 3. Fluxo APROVAR E FECHAR → abre o modal
+        // 3. Fluxo APROVAR E FECHAR → abre o modal do encerramento técnico
         const campoServico = document.getElementById('txtServicoRealizado');
 
-        // Se campo vazio, chama a IA primeiro
+        // Se o campo estiver vazio, faz a requisição na rota do Render mapeada corretamente
         if (campoServico && campoServico.value.trim() === "") {
             campoServico.placeholder = "🪄 IA gerando descrição técnica...";
             try {
-                const response = await fetch(`https://sistema-brt-sombra.onrender.com`);
+                const response = await fetch(`https://sistema-brt-sombra.onrender.com/api/os/${numOS_int}/sugerir-servico`);
                 const dataIA = await response.json();
                 if (dataIA?.sugestao) campoServico.value = dataIA.sugestao;
             } catch (aiErr) {
@@ -999,7 +995,6 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             }
         }
 
-        // Abre o modal com o texto atual
         abrirModalServicoRealizado(num, campoServico?.value || "");
 
     } catch (err) {
@@ -1008,70 +1003,20 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
 });
 
 // =====================================================================
-// MODAL: SERVIÇO REALIZADO
+// MODAL AND CLOSING ACTIONS
 // =====================================================================
-function abrirModalServicoRealizado(numOS, textoAtual) {
-    document.getElementById('lblNumOSModal').innerText = `OS #${String(numOS).padStart(6, '0')}`;
-    
-    const txtModal = document.getElementById('txtServicoModal');
-    txtModal.value = textoAtual;
-    txtModal.readOnly = true;
-    txtModal.style.background = '#f8fafc';
-    txtModal.style.cursor = 'default';
-
-    document.getElementById('botoesModalPadrao').style.display = 'flex';
-    document.getElementById('botoesModalEdicao').style.display = 'none';
-    document.getElementById('modalServicoRealizado').classList.remove('hidden');
-}
-
-// Botão Editar
-document.getElementById('btnEditarServicoModal')?.addEventListener('click', () => {
-    const txtModal = document.getElementById('txtServicoModal');
-    txtModal.readOnly = false;
-    txtModal.style.background = '#fff';
-    txtModal.style.cursor = 'text';
-    txtModal.focus();
-    document.getElementById('botoesModalPadrao').style.display = 'none';
-    document.getElementById('botoesModalEdicao').style.display = 'flex';
-});
-
-// Botão Cancelar edição
-document.getElementById('btnCancelarEdicaoModal')?.addEventListener('click', () => {
-    const txtModal = document.getElementById('txtServicoModal');
-    txtModal.readOnly = true;
-    txtModal.style.background = '#f8fafc';
-    txtModal.style.cursor = 'default';
-    document.getElementById('botoesModalPadrao').style.display = 'flex';
-    document.getElementById('botoesModalEdicao').style.display = 'none';
-});
-
-// Botão Fechar O.S (sem edição)
-document.getElementById('btnFecharOSModal')?.addEventListener('click', async () => {
-    await executarFechamentoOS();
-});
-
-// Botão Salvar serviço e fechar O.S (com edição)
-document.getElementById('btnSalvarEFecharModal')?.addEventListener('click', async () => {
-    const txtModal = document.getElementById('txtServicoModal');
-    const campoServico = document.getElementById('txtServicoRealizado');
-    if (campoServico) campoServico.value = txtModal.value; // sincroniza com o campo da tela
-    await executarFechamentoOS(txtModal.value);
-});
-
-        document.getElementById('btnSairOSModal')?.addEventListener('click', () => {
-        document.getElementById('modalServicoRealizado').classList.add('hidden');
-    });
-
 async function executarFechamentoOS(textoServicoEditado = null) {
     const num = document.getElementById('txtNumOS').value;
+    const numOS_int = parseInt(num);
     const idOS = window.idOSGlobal;
     const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
 
     try {
-        // Salva o serviço realizado se foi editado ou se tem conteúdo
         const textoFinal = textoServicoEditado ?? document.getElementById('txtServicoRealizado')?.value ?? "";
+        
+        // 💾 CORREÇÃO DA ROTA: Persiste via API na rota estipulada de gravação
         if (textoFinal.trim() !== "") {
-            await fetch(`https://sistema-brt-sombra.onrender.com`, {
+            await fetch(`https://sistema-brt-sombra.onrender.com/api/os/${numOS_int}/gravar-servico`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ servico_realizado: textoFinal.trim() })
@@ -1083,7 +1028,8 @@ async function executarFechamentoOS(textoServicoEditado = null) {
             status: 'FECHADA',
             data_fechamento: new Date().toISOString(),
             usuario_fechamento: usuarioLogado.nome,
-            link_documentos: linkDoc
+            link_documentos: linkDoc,
+            servico_realizado: textoFinal.trim()
         }).eq('id', idOS));
 
         // Baixa SS e Ocorrência
