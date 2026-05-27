@@ -830,6 +830,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         const veiculoDisponivel = document.getElementById('chkVeiculoDisponivel')?.checked || false;
         const campoDataDisp = document.getElementById('txtDataDisponivel')?.value || null;
         
+        // 🚀 TRATAMENTO DA DATA DO COMPONENTE: Converte PT-BR para ISO string
         let dataDisponivelISO = null;
         if (campoDataDisp) {
             const [data, hora] = campoDataDisp.split(' ');
@@ -868,7 +869,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         window.idOSGlobal = osOficial.id;
         
         // ===================================================================
-        // 💾 CORREÇÃO DA ROTA: Salva o texto sincronizado na rota correta
+        // 💾 GRAVAÇÃO DO SERVIÇO VIA API (INTEGRAÇÃO BACKEND RENDER - ROTA FIXA)
         // ===================================================================
         const campoServico = document.getElementById('txtServicoRealizado');
         if (campoServico && campoServico.value.trim() !== "") {
@@ -890,6 +891,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
             const campoNumEnc = document.getElementById('txtNumEncaminhamento');
             const valorTela = campoNumEnc.value;
 
+            // 🚀 LÓGICA DE SEQUENCIAL DINÂMICO GLOBAL CONFORME REQUISITO
             if (valorTela === "PENDENTE" || valorTela === "Nenhum Selecionado") {
                 const { data: ultimoEnc } = await client
                     .from('OS_Encaminhamentos')
@@ -951,7 +953,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
 document.getElementById('btnFinalizarOS')?.addEventListener('click', async function() {
     const num = document.getElementById('txtNumOS').value;
     const idOS = window.idOSGlobal;
-    const numOS_int = parseInt(num); // 🚀 DEFINIÇÃO ADICIONADA: Evita erro de variável não declarada
+    const numOS_int = parseInt(num);
 
     if (!idOS) return alert("Nenhuma O.S. carregada para finalizar.");
 
@@ -980,10 +982,10 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             return;
         }
 
-        // 3. Fluxo APROVAR E FECHAR → abre o modal do encerramento técnico
+        // 3. Fluxo APROVAR E FECHAR → abre o modal
         const campoServico = document.getElementById('txtServicoRealizado');
 
-        // Se o campo estiver vazio, faz a requisição na rota do Render mapeada corretamente
+        // Se campo vazio, chama a IA primeiro na rota certa do Render
         if (campoServico && campoServico.value.trim() === "") {
             campoServico.placeholder = "🪄 IA gerando descrição técnica...";
             try {
@@ -995,7 +997,8 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
             }
         }
 
-        abrirModalServicoRealizado(num, campoServico?.value || "");
+        // Abre o modal exposto no escopo global
+        window.abrirModalServicoRealizado(num, campoServico?.value || "");
 
     } catch (err) {
         alert("Erro técnico: " + err.message);
@@ -1003,8 +1006,60 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
 });
 
 // =====================================================================
-// MODAL AND CLOSING ACTIONS
+// MODAL: SERVIÇO REALIZADO (Exposto no objeto window para acesso global)
 // =====================================================================
+window.abrirModalServicoRealizado = function(numOS, textoAtual) {
+    document.getElementById('lblNumOSModal').innerText = `OS #${String(numOS).padStart(6, '0')}`;
+    
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.value = textoAtual;
+    txtModal.readOnly = true;
+    txtModal.style.background = '#f8fafc';
+    txtModal.style.cursor = 'default';
+
+    document.getElementById('botoesModalPadrao').style.display = 'flex';
+    document.getElementById('botoesModalEdicao').style.display = 'none';
+    document.getElementById('modalServicoRealizado').classList.remove('hidden');
+};
+
+// Botão Editar
+document.getElementById('btnEditarServicoModal')?.addEventListener('click', () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.readOnly = false;
+    txtModal.style.background = '#fff';
+    txtModal.style.cursor = 'text';
+    txtModal.focus();
+    document.getElementById('botoesModalPadrao').style.display = 'none';
+    document.getElementById('botoesModalEdicao').style.display = 'flex';
+});
+
+// Botão Cancelar edição
+document.getElementById('btnCancelarEdicaoModal')?.addEventListener('click', () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.readOnly = true;
+    txtModal.style.background = '#f8fafc';
+    txtModal.style.cursor = 'default';
+    document.getElementById('botoesModalPadrao').style.display = 'flex';
+    document.getElementById('botoesModalEdicao').style.display = 'none';
+});
+
+// Botão Fechar O.S (sem edição)
+document.getElementById('btnFecharOSModal')?.addEventListener('click', async () => {
+    await executarFechamentoOS();
+});
+
+// Botão Salvar serviço e fechar O.S (com edição)
+document.getElementById('btnSalvarEFecharModal')?.addEventListener('click', async () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    const campoServico = document.getElementById('txtServicoRealizado');
+    if (campoServico) campoServico.value = txtModal.value; // sincroniza com o campo da tela
+    await executarFechamentoOS(txtModal.value);
+});
+
+document.getElementById('btnSairOSModal')?.addEventListener('click', () => {
+    document.getElementById('modalServicoRealizado').classList.add('hidden');
+});
+
 async function executarFechamentoOS(textoServicoEditado = null) {
     const num = document.getElementById('txtNumOS').value;
     const numOS_int = parseInt(num);
@@ -1012,9 +1067,8 @@ async function executarFechamentoOS(textoServicoEditado = null) {
     const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
 
     try {
+        // Salva o serviço realizado se foi editado ou se tem conteúdo (Rota corrigida para a API)
         const textoFinal = textoServicoEditado ?? document.getElementById('txtServicoRealizado')?.value ?? "";
-        
-        // 💾 CORREÇÃO DA ROTA: Persiste via API na rota estipulada de gravação
         if (textoFinal.trim() !== "") {
             await fetch(`https://sistema-brt-sombra.onrender.com/api/os/${numOS_int}/gravar-servico`, {
                 method: 'PUT',
@@ -1046,6 +1100,7 @@ async function executarFechamentoOS(textoServicoEditado = null) {
         alert("Erro ao fechar O.S: " + err.message);
     }
 }
+
 document.getElementById('btnReabrirOS')?.addEventListener('click', async function() {
     const numOS = document.getElementById('txtNumOS').value;
     const idOS = window.idOSGlobal;
@@ -1189,7 +1244,7 @@ async function carregarEtapasNoModal(termo) {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${etapa.codigo_etapa}</td><td>${etapa.descricao}</td>`;
             tr.onclick = () => {
-                document.getElementById('txtCodEtapa').value = eta_pa.codigo_etapa;
+                document.getElementById('txtCodEtapa').value = etapa.codigo_etapa;
                 document.getElementById('txtDescricaoEtapa').value = etapa.descricao;
                 document.getElementById('modalEtapas').classList.add('hidden');
             };
