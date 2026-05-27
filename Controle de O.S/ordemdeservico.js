@@ -877,7 +877,7 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         const campoServico = document.getElementById('txtServicoRealizado');
         if (campoServico && campoServico.value.trim() !== "") {
             try {
-                await fetch(`http://localhost:3000/api/os/${numOS}/gravar-servico`, {
+                await fetch(`https://sistema-brt-sombra.onrender.com`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ servico_realizado: campoServico.value.trim() })
@@ -991,7 +991,7 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
         if (campoServico && campoServico.value.trim() === "") {
             campoServico.placeholder = "🪄 IA gerando descrição técnica...";
             try {
-                const response = await fetch(`http://localhost:3000/api/os/${num}/sugerir-servico`);
+                const response = await fetch(`https://sistema-brt-sombra.onrender.com`);
                 const dataIA = await response.json();
                 if (dataIA?.sugestao) campoServico.value = dataIA.sugestao;
             } catch (aiErr) {
@@ -1071,7 +1071,7 @@ async function executarFechamentoOS(textoServicoEditado = null) {
         // Salva o serviço realizado se foi editado ou se tem conteúdo
         const textoFinal = textoServicoEditado ?? document.getElementById('txtServicoRealizado')?.value ?? "";
         if (textoFinal.trim() !== "") {
-            await fetch(`http://localhost:3000/api/os/${num}/gravar-servico`, {
+            await fetch(`https://sistema-brt-sombra.onrender.com`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ servico_realizado: textoFinal.trim() })
