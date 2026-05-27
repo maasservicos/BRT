@@ -28,8 +28,8 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     const { data: osData, error: osError } = await supabase
       .from('Ordens_Servico') 
       .select('*') // Vamos puxar todos os campos temporariamente para testar
-      .eq('numero_sequencial', numOS) // <-- Se o nome da coluna no banco for 'id', mude aqui para 'id'
-      .single();
+      .eq('numero_sequencial', numOS) // Se o nome da coluna no banco for 'id', mude aqui para 'id'
+      .maybeSingle(); // 🚀 Alterado para maybeSingle para evitar quebras se o registro não for único
 
     // Se o Supabase der QUALQUER erro, ele vai jogar na tela do seu navegador agora
     if (osError) {
@@ -44,6 +44,7 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     }
 
     // 4. Buscar os Insumos/Peças na tabela OS_Encaminhamentos
+    // 💡 NOTA: Se 'numero_os_direto' não retornar dados, lembre-se de testar filtrando por 'id_os' usando o osData.id
     const { data: insumosData, error: insumosError } = await supabase
       .from('OS_Encaminhamentos')
       .select('insumo_descricao, insumo_quantidade')
@@ -59,9 +60,9 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
       ? insumosData.map(i => `${i.insumo_quantidade}x ${i.insumo_descricao}`).join(', ')
       : 'Nenhum insumo ou peça utilizado.';
 
-    // 6. Configurar o Prompt e as Regras do Sistema
+    // 6. Configurar o Prompt e as Regras do System Instruction
     const systemInstruction = `
-      Você é um assistente técnico especialista em manutenção de frotas do sistema de Onibus Eletricos.
+      Você é um assistente técnico especialista em manutenção de frotas do sistema de Onibus Eletricos e BRT.
       Sua função é gerar um texto técnico, altamente profissional, curto e formal para o campo "Serviço Realizado" de uma Ordem de Serviço (O.S.).
       
       Regras de Negócio e Comportamento:
@@ -79,17 +80,23 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
       Retorne única e exclusivamente a frase final do serviço, sem introduções ou saudações.
     `;
 
-    // 7. Chamar a API do Gemini
-    const response = await ai.models.generateContent({
+    // 7. Chamar a API do Gemini (Sintaxe oficial corrigida com execução da função .text())
+    console.log("🤖 Enviando requisição ao modelo gemini-2.5-flash...");
+    
+    const model = genAI.getGenerativeModel({ 
       model: 'gemini-2.5-flash',
+      systemInstruction: systemInstruction 
+    });
+
+    const response = await model.generateContent({
       contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
+      generationConfig: {
         temperature: 0.1, 
       }
     });
 
-    const servicoSugerido = response.text.trim();
+    // 🚀 CORREÇÃO TÉCNICA: O texto deve ser extraído executando a função .text() da própria response
+    const servicoSugerido = response.response.text().trim();
 
     // 8. Retornar a sugestão gerada para o Frontend
     return res.json({
