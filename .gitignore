@@ -1,0 +1,5 @@
+# Configurações locais e chaves secretas
+.env
+
+# Pastas de dependências (não precisam ir para o Git pois o npm install baixa elas)
+node_modules/

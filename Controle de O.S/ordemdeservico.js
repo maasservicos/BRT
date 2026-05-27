@@ -253,11 +253,15 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             document.getElementById('txtPrefixo').value = os.prefixo_veiculo || "";
             document.getElementById('numKm').value = os.km_atual || 0;
             document.getElementById('txtDefeito').value = os.defeito_relatado || "";
+            
+            // 👤 INSERÇÃO: Preenche o campo de serviço realizado se já existir no banco
+            const campoServico = document.getElementById('txtServicoRealizado');
+            if (campoServico) campoServico.value = os.servico_realizado || "";
 
             const campoAbertura = document.getElementById('txtDataAbertura');
             if (campoAbertura && os.data_abertura) {
-            const d = new Date(os.data_abertura);
-            campoAbertura.value = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                const d = new Date(os.data_abertura);
+                campoAbertura.value = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
             }
 
             const chkDano = document.getElementById('chkDanoSevero');
@@ -273,29 +277,22 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             if(lblResumo) lblResumo.innerText = String(os.numero_sequencial).padStart(6, '0');
 
             const chkDisp = document.getElementById('chkVeiculoDisponivel');
-            if (chkDisp) {
-                chkDisp.checked = (os.is_veiculo_disponivel === true);
-            }
+            if (chkDisp) chkDisp.checked = (os.is_veiculo_disponivel === true);
 
             const campoDataDisp = document.getElementById('txtDataDisponivel');
             if (campoDataDisp && os.data_veiculo_disponivel) {
-                // 🚀 CORREÇÃO DE FUSO: Se o banco traz "2026-05-26T10:05:00", vamos tratar como texto puro
-                // Isso evita que o navegador tente subtrair as 3 horas do fuso de Goiânia
                 try {
                     const [dataParte, horaParte] = os.data_veiculo_disponivel.split('T');
                     const [ano, mes, dia] = dataParte.split('-');
-                    const horaMinuto = horaParte.substring(0, 5); // Pega apenas o "HH:MM"
-                    
+                    const horaMinuto = horaParte.substring(0, 5);
                     campoDataDisp.value = `${dia}/${mes}/${ano} ${horaMinuto}`;
                 } catch (e) {
-                    // Plano B caso venha em outro formato do banco
                     const d = new Date(os.data_veiculo_disponivel);
                     campoDataDisp.value = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
                 }
             }
               
             window.atualizarResumoCustosOS(os.id);
-            
             carregarHistoricoEncaminhamentos();
             liberarCamposEncaminhamento(false);
             aplicarStatusVisual(os.status);
@@ -310,6 +307,7 @@ document.getElementById('txtNumOS')?.addEventListener('blur', async function() {
             } else {
                 if (campoFechamento) campoFechamento.value = "";
             }
+
         }    
     } catch (err) {
         console.error("Erro ao carregar O.S:", err);
@@ -872,6 +870,23 @@ document.getElementById('btnSalvarOS')?.addEventListener('click', async function
         }
 
         window.idOSGlobal = osOficial.id;
+        
+        // ===================================================================
+        // 💾 GRAVAÇÃO DO SERVIÇO VIA API (INTEGRAÇÃO BACKEND LOCAL)
+        // ===================================================================
+        const campoServico = document.getElementById('txtServicoRealizado');
+        if (campoServico && campoServico.value.trim() !== "") {
+            try {
+                await fetch(`http://localhost:3000/api/os/${numOS}/gravar-servico`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ servico_realizado: campoServico.value.trim() })
+                });
+                console.log("📝 Texto do Serviço Realizado salvo com sucesso via API!");
+            } catch (apiErr) {
+                console.error("Erro ao salvar serviço realizado via API:", apiErr);
+            }
+        }
 
         // 2. SALVAMENTO DO ENCAMINHAMENTO E INSUMOS
         if (window.idEncaminhamentoAtivo) {
@@ -945,58 +960,146 @@ document.getElementById('btnFinalizarOS')?.addEventListener('click', async funct
     if (!idOS) return alert("Nenhuma O.S. carregada para finalizar.");
 
     try {
-        const pendentes = await dbService.execute(client.from('OS_Encaminhamentos').select('numero_encaminhamento').eq('id_os', idOS).neq('status_enc', 'CONCLUIDO'));
+        // 1. Valida encaminhamentos pendentes
+        const pendentes = await dbService.execute(
+            client.from('OS_Encaminhamentos')
+                .select('numero_encaminhamento')
+                .eq('id_os', idOS)
+                .neq('status_enc', 'CONCLUIDO')
+        );
 
         if (pendentes && pendentes.length > 0) {
             const listaPendentes = pendentes.map(p => p.numero_encaminhamento).join(", ");
-            return alert(`⚠️ Bloqueio de Processo: Existem encaminhamentos pendentes (${listaPendentes}).\nEncerre todos os encaminhamentos antes de avançar.`);
+            return alert(`⚠️ Bloqueio: Encaminhamentos pendentes (${listaPendentes}).\nEncerre todos antes de avançar.`);
         }
 
         const statusAtual = document.getElementById('badgeStatusTopo')?.innerText;
-        const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
 
-        let novoStatus = "";
-        let mensagem = "";
-
-        if (statusAtual === "EM VALIDAÇÃO") {
-            if (!confirm(`A O.S ${num} já foi auditada? Deseja FECHAR definitivamente e baixar a S.S/Ocorrência?`)) return;
-            novoStatus = "FECHADA";
-            mensagem = "✅ O.S Fechada com sucesso! S.S e Ocorrência também foram baixadas.";
-        } else {
-            if (!confirm(`Deseja enviar a O.S ${num} para a etapa de VALIDAÇÃO?`)) return;
-            novoStatus = "VALIDACAO";
-            mensagem = "⏳ O.S enviada para Validação!";
+        // 2. Fluxo VALIDAÇÃO → apenas confirma e muda status
+        if (statusAtual !== "EM VALIDAÇÃO") {
+            if (!confirm(`Deseja enviar a O.S ${num} para VALIDAÇÃO?`)) return;
+            await dbService.execute(client.from('Ordens_Servico').update({ status: 'VALIDACAO' }).eq('id', idOS));
+            alert("⏳ O.S enviada para Validação!");
+            window.location.reload();
+            return;
         }
 
-        const payload = { status: novoStatus, link_documentos: linkDoc };
-        
-        if (novoStatus === "FECHADA") {
-            payload.data_fechamento = new Date().toISOString();
-            payload.usuario_fechamento = usuarioLogado.nome; 
-        }
+        // 3. Fluxo APROVAR E FECHAR → abre o modal
+        const campoServico = document.getElementById('txtServicoRealizado');
 
-        await dbService.execute(client.from('Ordens_Servico').update(payload).eq('id', idOS));
-
-        if (novoStatus === "FECHADA") {
-            const numSS = document.getElementById('txtNumSS')?.value;
-            const prefixo = document.getElementById('txtPrefixo')?.value;
-
-            if (numSS) {
-                await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'FECHADA' }).eq('numero_ss', numSS));
-            }
-            if (prefixo) {
-                await dbService.execute(client.from('Ocorrencia').update({ status: 'FECHADA' }).eq('prefixo_veiculo', prefixo).eq('status', 'Em Andamento')); 
+        // Se campo vazio, chama a IA primeiro
+        if (campoServico && campoServico.value.trim() === "") {
+            campoServico.placeholder = "🪄 IA gerando descrição técnica...";
+            try {
+                const response = await fetch(`http://localhost:3000/api/os/${num}/sugerir-servico`);
+                const dataIA = await response.json();
+                if (dataIA?.sugestao) campoServico.value = dataIA.sugestao;
+            } catch (aiErr) {
+                console.error("Falha na IA:", aiErr);
             }
         }
 
-        alert(mensagem);
-        window.location.reload(); 
+        // Abre o modal com o texto atual
+        abrirModalServicoRealizado(num, campoServico?.value || "");
 
     } catch (err) {
         alert("Erro técnico: " + err.message);
     }
 });
 
+// =====================================================================
+// MODAL: SERVIÇO REALIZADO
+// =====================================================================
+function abrirModalServicoRealizado(numOS, textoAtual) {
+    document.getElementById('lblNumOSModal').innerText = `OS #${String(numOS).padStart(6, '0')}`;
+    
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.value = textoAtual;
+    txtModal.readOnly = true;
+    txtModal.style.background = '#f8fafc';
+    txtModal.style.cursor = 'default';
+
+    document.getElementById('botoesModalPadrao').style.display = 'flex';
+    document.getElementById('botoesModalEdicao').style.display = 'none';
+    document.getElementById('modalServicoRealizado').classList.remove('hidden');
+}
+
+// Botão Editar
+document.getElementById('btnEditarServicoModal')?.addEventListener('click', () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.readOnly = false;
+    txtModal.style.background = '#fff';
+    txtModal.style.cursor = 'text';
+    txtModal.focus();
+    document.getElementById('botoesModalPadrao').style.display = 'none';
+    document.getElementById('botoesModalEdicao').style.display = 'flex';
+});
+
+// Botão Cancelar edição
+document.getElementById('btnCancelarEdicaoModal')?.addEventListener('click', () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    txtModal.readOnly = true;
+    txtModal.style.background = '#f8fafc';
+    txtModal.style.cursor = 'default';
+    document.getElementById('botoesModalPadrao').style.display = 'flex';
+    document.getElementById('botoesModalEdicao').style.display = 'none';
+});
+
+// Botão Fechar O.S (sem edição)
+document.getElementById('btnFecharOSModal')?.addEventListener('click', async () => {
+    await executarFechamentoOS();
+});
+
+// Botão Salvar serviço e fechar O.S (com edição)
+document.getElementById('btnSalvarEFecharModal')?.addEventListener('click', async () => {
+    const txtModal = document.getElementById('txtServicoModal');
+    const campoServico = document.getElementById('txtServicoRealizado');
+    if (campoServico) campoServico.value = txtModal.value; // sincroniza com o campo da tela
+    await executarFechamentoOS(txtModal.value);
+});
+
+        document.getElementById('btnSairOSModal')?.addEventListener('click', () => {
+        document.getElementById('modalServicoRealizado').classList.add('hidden');
+    });
+
+async function executarFechamentoOS(textoServicoEditado = null) {
+    const num = document.getElementById('txtNumOS').value;
+    const idOS = window.idOSGlobal;
+    const linkDoc = document.getElementById('txtLinkDocumentos')?.value || "";
+
+    try {
+        // Salva o serviço realizado se foi editado ou se tem conteúdo
+        const textoFinal = textoServicoEditado ?? document.getElementById('txtServicoRealizado')?.value ?? "";
+        if (textoFinal.trim() !== "") {
+            await fetch(`http://localhost:3000/api/os/${num}/gravar-servico`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ servico_realizado: textoFinal.trim() })
+            });
+        }
+
+        // Fecha a O.S
+        await dbService.execute(client.from('Ordens_Servico').update({
+            status: 'FECHADA',
+            data_fechamento: new Date().toISOString(),
+            usuario_fechamento: usuarioLogado.nome,
+            link_documentos: linkDoc
+        }).eq('id', idOS));
+
+        // Baixa SS e Ocorrência
+        const numSS = document.getElementById('txtNumSS')?.value;
+        const prefixo = document.getElementById('txtPrefixo')?.value;
+        if (numSS) await dbService.execute(client.from('Solicitacao_Servicos').update({ status_ss: 'FECHADA' }).eq('numero_ss', numSS));
+        if (prefixo) await dbService.execute(client.from('Ocorrencia').update({ status: 'FECHADA' }).eq('prefixo_veiculo', prefixo).eq('status', 'Em Andamento'));
+
+        document.getElementById('modalServicoRealizado').classList.add('hidden');
+        alert("✅ O.S Fechada com sucesso!");
+        window.location.reload();
+
+    } catch (err) {
+        alert("Erro ao fechar O.S: " + err.message);
+    }
+}
 document.getElementById('btnReabrirOS')?.addEventListener('click', async function() {
     const numOS = document.getElementById('txtNumOS').value;
     const idOS = window.idOSGlobal;

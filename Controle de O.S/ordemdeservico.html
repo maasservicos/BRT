@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,12 +26,12 @@
             <a href="../Dashboard/painel.html" style="font-size: 13px; color: #0ea5e9; text-decoration: none; font-weight: bold; border: 1px solid #0ea5e9; padding: 4px 10px; border-radius: 50px; transition: 0.3s;">
                 📊 Dashboard
             </a>
-
+ 
             <a href="#" id="btnSair" style="font-size: 13px; color: #ef4444; text-decoration: none; font-weight: bold;">Sair [x]</a>
         </div>  
     </div>
 </header>
-
+ 
     <div class="container">
         <div class="layout">
             
@@ -96,7 +97,7 @@
                         </div>
                     </div>
                 </section>
-
+ 
                 <section class="card">
                     <h2>2. Informações do Ativo (Veículo)</h2>
                     <div class="grid">
@@ -134,27 +135,35 @@
                         </div>
                     </div>
                 </section>
-
+ 
                 <section class="card">
-                    <h2>3. Diagnóstico e Classificação</h2>
-                    <div class="grid">
-                        <div class="col-8">
-                            <label class="req" for="txtDefeito">Defeito Relatado na S.S</label>
-                            <textarea id="txtDefeito" placeholder="Descreva os sintomas da falha..."></textarea>
+                        <h2>3. Diagnóstico e Classificação</h2>
+                        <div class="grid">
+                            <div class="col-8">
+                                <label class="req" for="txtDefeito">Defeito Relatado na S.S</label>
+                                <textarea id="txtDefeito" placeholder="Descreva os sintomas da falha..."></textarea>
+                            </div>
+                            <div class="col-4">
+                                <label class="req" for="cboTipoServico">Tipo de Manutenção</label>
+                                <select id="cboTipoServico">
+                                    <option value="">Selecione...</option>
+                                    <option value="Corretiva">Corretiva</option>
+                                    <option value="Preventiva">Preventiva</option>
+                                    <option value="Preditiva">Preditiva</option>
+                                    <option value="Garantia">Garantia</option>
+                                </select>
+                            </div>
+ 
+                            <div class="col-12 mt-15">
+                                <label for="txtServicoRealizado" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                                    Serviço Realizado Executado (Sugerido por IA)
+                                </label>
+                                <textarea id="txtServicoRealizado" placeholder="O texto técnico será gerado automaticamente ao fechar a O.S..." style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; width: 100%; min-height: 70px; font-family: inherit; resize: vertical;"></textarea>
+                                <p class="help" style="margin-top: 4px; color: #64748b;">A IA analisa o defeito e as peças lançadas nos encaminhamentos para construir o termo técnico acima. Você pode editar livremente se necessário.</p>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <label class="req" for="cboTipoServico">Tipo de Manutenção</label>
-                            <select id="cboTipoServico">
-                                <option value="">Selecione...</option>
-                                <option value="Corretiva">Corretiva</option>
-                                <option value="Preventiva">Preventiva</option>
-                                <option value="Preditiva">Preditiva</option>
-                                <option value="Garantia">Garantia</option>
-                            </select>
-                        </div>
-                    </div>
                 </section>
-
+ 
                 <section class="card" id="secEncaminhamento">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h2>4. Encaminhamento</h2>
@@ -164,7 +173,7 @@
                         </div>
                     </div>
                     <p class="help">Gere ou selecione um encaminhamento para adicionar insumos específicos.</p>
-
+ 
                     <div class="table-wrapper">
                         <table class="table-maas table-historico">
                             <thead>
@@ -180,7 +189,7 @@
                             </tbody>
                         </table>
                     </div>
-
+ 
                     <div class="grid mt-20">
                         <div class="col-3">
                             <label for="txtNumEncaminhamento">Nº do Enc. Ativo</label>
@@ -204,11 +213,11 @@
                                 <button type="button" id="btnLupaEtapa" class="btn-ghost btn-icon" disabled title="Pesquisar Etapa">🔍</button>
                             </div>
                         </div>
-                                    <div class="col-3">
+                        <div class="col-3">
                             <label for="txtDescricaoEtapa">Descrição da Etapa</label>
                             <input type="text" id="txtDescricaoEtapa" class="readonly-field" readonly>
                         </div>
-
+ 
                         <div class="col-3">
                             <label for="cboOficinaExterna">Serviço Externo?</label>
                            <select id="cboOficinaExterna" disabled>
@@ -227,7 +236,7 @@
                             <label for="txtDataEncaminhamento">Data/Hora do Envio</label>
                             <input id="txtDataEncaminhamento" type="text" placeholder="Aguardando..." readonly disabled/>
                         </div>
-                           <div class="col-3">
+                        <div class="col-3">
                             <label for="txtDataConclusao">Data/Hora da Conclusão</label>
                             <input id="txtDataConclusao" type="text" placeholder="Aguardando..." readonly disabled/>
                         </div>
@@ -240,19 +249,18 @@
                         </div>
                     </div>
                 </section>
-
+ 
                 <section class="card" id="secInsumos">
                     <h2>5. Insumos (Peças, Serviços & Mão de Obra)</h2>
                     <p class="help">Selecione o tipo de insumo para abrir a consulta padrão ou digite o código.</p>
-
+ 
                     <div class="actions insumo-categories">
                         <button type="button" class="btn-ghost" onclick="configurarTipo('PRODUTO')">📦 Peças</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('SERVICO')">🛠️ Serviços</button>
                         <button type="button" class="btn-ghost" onclick="configurarTipo('TECNICO')">👤 Mão de Obra</button>
                         <button type="button" class="btn-ghost" onclick="window.location.href='/Mão de Obra/dashboard.html'">👤 Painel de Mão de Obra</button>
-               
                     </div>
-
+ 
                     <div class="grid insumo-form">
                         <div class="col-2">
                             <label id="lblTipoInsumo">Cód. Item</label>
@@ -277,7 +285,7 @@
                             <button type="button" id="btnAdicionarInsumo" class="btn-primary w-100">Adicionar (+)</button>
                         </div>
                     </div>
-
+ 
                     <div class="grid">
                         <div class="col-12">
                             <div class="table-wrapper">
@@ -307,7 +315,7 @@
                         </div>
                     </div>
                 </section>
-
+ 
                 <section class="card" id="secValidacao">
                     <h2>6. Validação e Anexos</h2>
                     <p class="help">Anexe orçamentos, notas fiscais e documentos comprobatórios referentes a esta O.S no OneDrive e cole o link abaixo antes de enviar para validação.</p>
@@ -320,6 +328,7 @@
                         </div>
                     </div>
                 </section>
+ 
                 <section class="card bg-light">
                     <div class="actions">
                         <button id="btnSalvarOS" type="button" class="btn-primary">💾 Salvar O.S</button>
@@ -329,7 +338,7 @@
                     </div>
                 </section>
             </main>
-
+ 
             <aside class="card summary">
                 <h2>Resumo da O.S</h2>
                 <div class="row"><span>Status</span><span id="lblStatus" class="badge badge-gray">NOVA</span></div>
@@ -343,7 +352,10 @@
             
         </div>
     </div>
-
+ 
+    <!-- ================================================================
+         MODAL: S.S PENDENTES
+    ================================================================ -->
     <div id="modalSS" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -361,13 +373,15 @@
                             <th style="text-align: center;">Ação</th> 
                         </tr>
                     </thead>
-                    <tbody id="tabelaSS">
-                        </tbody>    
+                    <tbody id="tabelaSS"></tbody>    
                 </table>
             </div>
         </div>
     </div>
-
+ 
+    <!-- ================================================================
+         MODAL: INSUMOS
+    ================================================================ -->
     <div id="modalInsumos" class="modal-overlay hidden">
         <div class="modal-content modal-lg">
             <div class="modal-header modal-header-dark">
@@ -379,7 +393,6 @@
                     <label>Pesquisar:</label>
                     <input type="text" id="txtBuscaInsumo" placeholder="Digite para pesquisar...">
                 </div>
-
                 <div class="table-scroll-container">
                     <table class="table-maas table-bordered">
                         <thead>
@@ -388,11 +401,9 @@
                                 <th>Descrição</th>
                             </tr>
                         </thead>
-                        <tbody id="listaBuscaInsumos">
-                            </tbody>
+                        <tbody id="listaBuscaInsumos"></tbody>
                     </table>
                 </div>
-
                 <div class="modal-footer">
                     <button type="button" onclick="document.getElementById('modalInsumos').classList.add('hidden')" class="btn-ghost btn-outline-primary">Cancelar</button>
                     <button type="button" id="btnConfirmarInsumoModal" class="btn-primary">OK</button>
@@ -400,74 +411,143 @@
             </div>
         </div>
     </div>
+ 
+    <!-- ================================================================
+         MODAL: ETAPAS
+    ================================================================ -->
     <div id="modalEtapas" class="modal-overlay hidden">
-    <div class="modal-content">
-        <header class="modal-header">
-            <h2>Pesquisar Etapa</h2>
-            <button id="btnFecharModalEtapas" class="btn-close">&times;</button>
-        </header>
-        <div class="modal-body">
-            <div class="input-group">
-                <input type="text" id="txtBuscaEtapaModal" placeholder="Digite a descrição da etapa...">
-            </div>
-            <div class="table-container mt-15">
-                <table class="table-maas">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Descrição</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaBuscaEtapasModal">
-                        <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>          
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2>Pesquisar Etapa</h2>
+                <button id="btnFecharModalEtapas" class="btn-close">&times;</button>
+            </header>
+            <div class="modal-body">
+                <div class="input-group">
+                    <input type="text" id="txtBuscaEtapaModal" placeholder="Digite a descrição da etapa...">
+                </div>
+                <div class="table-container mt-15">
+                    <table class="table-maas">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBuscaEtapasModal">
+                            <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>          
+        </div>
     </div>
-</div>
-
-<div id="modalFornecedores" class="modal-overlay hidden">
-    <div class="modal-content">
-        <header class="modal-header">
-            <h2>Pesquisar Fornecedor</h2>
-            <button id="btnFecharModalFornecedores" class="btn-close">&times;</button>
-        </header>
-        <div class="modal-body">
-            <div class="input-group">
-                <input type="text" id="txtBuscaFornecedorModal" placeholder="Digite o nome ou CNPJ...">
-            </div>
-            <div class="table-container mt-15">
-                <table class="table-maas">
-                    <thead>
-                        <tr>
-                            <th>Cód/CNPJ</th>
-                            <th>Nome do Fornecedor</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaBuscaFornecedoresModal">
-                        <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
-                    </tbody>
-                </table>
+ 
+    <!-- ================================================================
+         MODAL: FORNECEDORES
+    ================================================================ -->
+    <div id="modalFornecedores" class="modal-overlay hidden">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2>Pesquisar Fornecedor</h2>
+                <button id="btnFecharModalFornecedores" class="btn-close">&times;</button>
+            </header>
+            <div class="modal-body">
+                <div class="input-group">
+                    <input type="text" id="txtBuscaFornecedorModal" placeholder="Digite o nome ou CNPJ...">
+                </div>
+                <div class="table-container mt-15">
+                    <table class="table-maas">
+                        <thead>
+                            <tr>
+                                <th>Cód/CNPJ</th>
+                                <th>Nome do Fornecedor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBuscaFornecedoresModal">
+                            <tr><td colspan="2" class="text-center text-muted">Digite para pesquisar...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-  <footer>
+ 
+    <!-- ================================================================
+         MODAL: SERVIÇO REALIZADO (APROVAR E FECHAR O.S)
+    ================================================================ -->
+    <div id="modalServicoRealizado" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 600px;">
+ 
+            <!-- Cabeçalho -->
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: center;">
+                <div style="display: flex; align-items: center; justify-content: center;gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #dcfce7; display: flex; align-items: center; justify-content: center; font-size: 18px;">📋</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Serviço Realizado</h3>
+                        <p style="margin: 0; font-size: 12px; color: #ffffff;">Revise o texto técnico antes de fechar a O.S</p>
+                    </div>
+                    <span id="lblNumOSModal" style="font-size: 15px; background: #f1f5f9; color: #000000; padding: 3px 10px; border-radius: 6px; font-weight: 600; margin-left: 10px; "></span>
+                    <button id="btnSairOSModal" type="button" class="btn-close">&times;</button>
+                </div>
+                
+            </div>
+ 
+            <!-- Corpo -->
+            <div class="modal-body">
+ 
+                <!-- Indicador de loading da IA -->
+                <div id="loadingIA" style="display: none; text-align: center; padding: 1.5rem 0; color: #6366f1;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🪄</div>
+                    <p style="margin: 0; font-size: 14px; font-weight: 600;">IA gerando descrição técnica...</p>
+                    <p style="margin: 4px 0 0; font-size: 12px; color: #ffffff;">Analisando defeito e peças utilizadas</p>
+                </div>
+ 
+                <!-- Área do texto -->
+                <div id="areaTextoModal">
+                    <textarea 
+                        id="txtServicoModal" 
+                        rows="6" 
+                        readonly
+                        style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.6; resize: vertical; box-sizing: border-box; background: #f8fafc; cursor: default; font-family: inherit; color: #1e293b;"
+                        placeholder="Nenhuma descrição disponível. Clique em Editar para inserir manualmente."
+                    ></textarea>
+                    <p style="margin: 6px 0 0; font-size: 11px; color: #ffffff;">
+                        💡 Este texto será gravado no histórico técnico da O.S ao fechar.
+                    </p>
+                </div>
+ 
+                <!-- Botões: estado padrão (somente leitura) -->
+                <div id="botoesModalPadrao" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem;">
+                    <button id="btnEditarServicoModal" type="button" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 13px; font-weight: 500;">
+                        ✏️ Editar
+                    </button>
+                    <button id="btnFecharOSModal" type="button" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 8px; border: none; background: #dcfce7; color: #166534; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        🔒 Fechar O.S
+                    </button>
+                </div>
+ 
+                <!-- Botões: estado edição -->
+                <div id="botoesModalEdicao" style="display: none; gap: 8px; justify-content: flex-end; margin-top: 1rem;">
+                    <button id="btnCancelarEdicaoModal" type="button" style="padding: 8px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 13px; color: #64748b;">
+                        Cancelar
+                    </button>
+                    <button id="btnSalvarEFecharModal" type="button" style="display: flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 8px; border: none; background: #dcfce7; color: #166534; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        💾 Salvar serviço e fechar O.S
+                    </button>
+                </div>
+ 
+            </div>
+        </div>
+    </div>
+ 
+    <footer>
         <span style="font-weight: 600; color: #6b7280;">Versão 1.00-Homolog</span>
-        <span style="margin: 0 0.5rem;"">|</span>
+        <span style="margin: 0 0.5rem;">|</span>
         Publicado em 27/03/2026
         <span style="margin: 0 0.5rem;">|</span>
         <span style="font-weight: 600; color: #6b7280;">BI MAAS</span>
-        </span>
     </footer>
-
+ 
     <script type="module" src="ordemdeservico.js"></script>
-</body>
-</html>
-
-    <script type="module" src="ordemdeservico.js"></script>
-</body>
-</html>ript type="module" src="ordemdeservico.js"></script>
 </body>
 </html>
