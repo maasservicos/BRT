@@ -9,6 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json()); 
 
+
 // 2. Inicializando os Clientes do Supabase e da IA do Gemini
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -101,9 +102,6 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     return res.status(500).json({ error: 'Erro ao processar a sugestão da IA.' });
   }
 });
-
-// 9. Ligar o servidor na porta configurada
-const PORT = process.env.PORT || 3000;
 
 /**
  * ROTA: PUT /api/os/:id/gravar-servico
