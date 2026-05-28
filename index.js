@@ -16,7 +16,6 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * ROTA: GET /api/os/:id/sugerir-servico
-
  */
 app.get('/api/os/:id/sugerir-servico', async (req, res) => {
   const osId = req.params.id; // Esse é o ID ou Número Sequencial que vai vir na URL
@@ -44,7 +43,6 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     }
 
     // 4. Buscar os Insumos/Peças na tabela OS_Encaminhamentos
-    // 💡 NOTA: Se 'numero_os_direto' não retornar dados, lembre-se de testar filtrando por 'id_os' usando o osData.id
     const { data: insumosData, error: insumosError } = await supabase
       .from('OS_Encaminhamentos')
       .select('insumo_descricao, insumo_quantidade')
@@ -80,23 +78,21 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
       Retorne única e exclusivamente a frase final do serviço, sem introduções ou saudações.
     `;
 
-    // 7. Chamar a API do Gemini (Sintaxe oficial corrigida com execução da função .text())
+    // 7. Chamar a API do Gemini (Sintaxe Corrigida para o SDK Novo '@google/genai')
     console.log("🤖 Enviando requisição ao modelo gemini-2.5-flash...");
     
-    const model = ai.getGenerativeModel({ 
+    // No pacote novo, chamamos direto ai.models.generateContent passando o modelo dentro da configuração
+    const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      systemInstruction: systemInstruction 
-    });
-
-    const response = await model.generateContent({
       contents: prompt,
-      generationConfig: {
+      config: {
+        systemInstruction: systemInstruction,
         temperature: 0.1, 
       }
     });
 
-    // 🚀 CORREÇÃO TÉCNICA: O texto deve ser extraído executando a função .text() da própria response
-    const servicoSugerido = response.response.text().trim();
+    // No pacote novo, o texto puro vem direto na propriedade .text (como string, sem função)
+    const servicoSugerido = response.text.trim();
 
     // 8. Retornar a sugestão gerada para o Frontend
     return res.json({
@@ -132,11 +128,9 @@ app.put('/api/os/:id/gravar-servico', async (req, res) => {
       .from('Ordens_Servico')
       .update({ 
         servico_realizado: servico_realizado.trim(),
-        // Se você tiver uma coluna de status para encerrar a OS, pode atualizar junto aqui, ex:
-        // status: 'Encerrada' 
       })
       .eq('numero_sequencial', numOS)
-      .select(); // O select() faz o Supabase retornar a linha atualizada
+      .select(); // O select() faz o Supabase retornar a linha updated
 
     if (error) {
       console.error('Erro ao gravar no Supabase:', error);
