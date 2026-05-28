@@ -79,27 +79,33 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     `;
 
     // 7. Chamar a API do Gemini (Sintaxe Corrigida para o SDK Novo '@google/genai')
+   // 7. Chamar a API do Gemini (Com proteção contra quedas e oscilações 503)
     console.log("🤖 Enviando requisição ao modelo gemini-2.5-flash...");
     
-    // No pacote novo, chamamos direto ai.models.generateContent passando o modelo dentro da configuração
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.1, 
-      }
-    });
+    let servicoSugerido = "";
 
-    // No pacote novo, o texto puro vem direto na propriedade .text (como string, sem função)
-    const servicoSugerido = response.text.trim();
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.1, 
+        }
+      });
+      servicoSugerido = response.text.trim();
+      console.log("✅ Resposta da IA gerada com sucesso!");
+    } catch (geminiError) {
+      console.error("💥 Instabilidade na API do Gemini (503/Cota):", geminiError.message);
+      // Fallback: Se o Google falhar, gera o texto técnico padrão para não travar a oficina
+      servicoSugerido = `Realizada manutenção e conserto do defeito informado pelo Cliente:  ${descricaoProblema}.`;
+    }
 
     // 8. Retornar a sugestão gerada para o Frontend
     return res.json({
       os_id: numOS,
       sugestao: servicoSugerido
     });
-    
 
   } catch (error) {
     console.error('Erro interno no servidor do sistema:', error);
