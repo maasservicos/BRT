@@ -83,7 +83,7 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
     // 7. Chamar a API do Gemini (Sintaxe oficial corrigida com execução da função .text())
     console.log("🤖 Enviando requisição ao modelo gemini-2.5-flash...");
     
-    const model = genAI.getGenerativeModel({ 
+    const model = ai.getGenerativeModel({ 
       model: 'gemini-2.5-flash',
       systemInstruction: systemInstruction 
     });
@@ -103,6 +103,7 @@ app.get('/api/os/:id/sugerir-servico', async (req, res) => {
       os_id: numOS,
       sugestao: servicoSugerido
     });
+    
 
   } catch (error) {
     console.error('Erro interno no servidor do sistema:', error);
