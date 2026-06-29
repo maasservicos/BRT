@@ -19,6 +19,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const bigquery = new BigQuery({
   projectId: 'gcp-maas-proj-manutencao',
   credentials: JSON.parse(process.env.BIGQUERY_CREDENTIALS || '{}'),
+  location: 'southamerica-east1',
 });
 
 /**
