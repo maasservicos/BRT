@@ -326,6 +326,8 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
   const prefixo = parseInt(req.params.prefixo, 10);
   if (isNaN(prefixo)) return res.status(400).json({ error: 'Prefixo inválido.' });
 
+  const defeito = req.query.defeito?.trim() || null;
+
   const query = `
     SELECT
       os.ID_SEQUENCIAL,
@@ -338,15 +340,19 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
     WHERE v.PREFIXO = @prefixo
+      ${defeito ? 'AND UPPER(TRIM(os.DESCRICAO_SERVICO)) = UPPER(TRIM(@defeito))' : ''}
     ORDER BY os.CREATED_AT DESC
     LIMIT 1
   `;
 
+  const params = defeito ? { prefixo, defeito } : { prefixo };
+  const types  = defeito ? { prefixo: 'INT64', defeito: 'STRING' } : { prefixo: 'INT64' };
+
   try {
     const [rows] = await bigquery.query({
       query,
-      params: { prefixo },
-      types: { prefixo: 'INT64' },
+      params,
+      types,
       location: 'us-east1',
     });
 
