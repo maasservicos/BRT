@@ -1436,7 +1436,9 @@ document.getElementById('btnFiltrarOSFechadas')?.addEventListener('click', async
                         data-id="${os.id}"
                         data-num="${os.numero_sequencial}"
                         data-abertura="${os.data_abertura || ''}"
-                        data-fechamento="${os.data_fechamento || ''}">📅 Datas</button>
+                        data-fechamento="${os.data_fechamento || ''}"
+                        data-prefixo="${os.prefixo_veiculo || ''}"
+                        data-defeito="${(os.defeito_relatado || '').replace(/"/g, '&quot;')}">📅 Datas</button>
                 </td>`;
             tr.querySelector('.btn-abrir-os').addEventListener('click', function() {
                 document.getElementById('modalOSFechadas').classList.add('hidden');
@@ -1446,7 +1448,7 @@ document.getElementById('btnFiltrarOSFechadas')?.addEventListener('click', async
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
             tr.querySelector('.btn-editar-datas').addEventListener('click', function() {
-                abrirModalAlterarDatas(this.dataset.id, this.dataset.num, this.dataset.abertura, this.dataset.fechamento, 'fechadas');
+                abrirModalAlterarDatas(this.dataset.id, this.dataset.num, this.dataset.abertura, this.dataset.fechamento, 'fechadas', this.dataset.prefixo, this.dataset.defeito);
             });
             tbody.appendChild(tr);
         });
@@ -1464,6 +1466,8 @@ document.getElementById('btnFiltrarOSFechadas')?.addEventListener('click', async
 // Estado compartilhado: qual O.S está sendo editada e de onde veio o pedido
 let _idOSEditandoDatas = null;
 let _origemModalDatas = 'form'; // 'form' | 'fechadas'
+let _prefixoOSEditandoDatas = null;
+let _defeitoOSEditandoDatas = null;
 
 const _toInputDT = iso => {
     if (!iso) return '';
@@ -1472,9 +1476,11 @@ const _toInputDT = iso => {
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-function abrirModalAlterarDatas(idOS, numOS, dataAbertura, dataFechamento, origem = 'form') {
+function abrirModalAlterarDatas(idOS, numOS, dataAbertura, dataFechamento, origem = 'form', prefixo = null, defeito = null) {
     _idOSEditandoDatas = idOS;
     _origemModalDatas = origem;
+    _prefixoOSEditandoDatas = prefixo;
+    _defeitoOSEditandoDatas = defeito;
     document.getElementById('lblNumOSAlterarDatas').innerText = `#${String(numOS).padStart(6, '0')}`;
     document.getElementById('inputDataAberturaDatas').value = _toInputDT(dataAbertura);
     document.getElementById('inputDataFechamentoDatas').value = _toInputDT(dataFechamento);
@@ -1486,9 +1492,15 @@ document.getElementById('btnAlterarDatas')?.addEventListener('click', async func
     if (!window.idOSGlobal) return alert('Carregue uma O.S antes de alterar as datas.');
     try {
         const os = await dbService.execute(
-            client.from('Ordens_Servico').select('data_abertura, data_fechamento').eq('id', window.idOSGlobal).single()
+            client.from('Ordens_Servico').select('data_abertura, data_fechamento, prefixo_veiculo, defeito_relatado').eq('id', window.idOSGlobal).single()
         );
-        abrirModalAlterarDatas(window.idOSGlobal, document.getElementById('txtNumOS').value, os.data_abertura, os.data_fechamento, 'form');
+        abrirModalAlterarDatas(
+            window.idOSGlobal,
+            document.getElementById('txtNumOS').value,
+            os.data_abertura, os.data_fechamento,
+            'form',
+            os.prefixo_veiculo, os.defeito_relatado
+        );
     } catch (e) {
         console.error('Erro ao carregar datas:', e);
     }
@@ -1498,6 +1510,41 @@ document.getElementById('btnAlterarDatas')?.addEventListener('click', async func
     document.getElementById(id)?.addEventListener('click', () => {
         document.getElementById('modalAlterarDatas').classList.add('hidden');
     });
+});
+
+document.getElementById('btnBuscarBigQueryDatas')?.addEventListener('click', async function() {
+    if (!_prefixoOSEditandoDatas) return alert('Prefixo não disponível para esta O.S.');
+    if (!_defeitoOSEditandoDatas) return alert('Defeito não disponível para esta O.S.');
+
+    this.disabled = true;
+    this.innerText = '⏳ Buscando...';
+
+    try {
+        const url = `${API_BASE}/api/bigquery/os/${_prefixoOSEditandoDatas}?defeito=${encodeURIComponent(_defeitoOSEditandoDatas)}`;
+        const resp = await fetch(url);
+        const json = await resp.json();
+
+        if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
+
+        // Converte "DD/MM/YYYY, HH:MM:SS" → "YYYY-MM-DDTHH:MM"
+        const bqParaInput = (str) => {
+            if (!str) return '';
+            const [datePart, timePart] = str.split(', ');
+            const [dia, mes, ano] = datePart.split('/');
+            const [h, m] = timePart.split(':');
+            return `${ano}-${mes}-${dia}T${h}:${m}`;
+        };
+
+        document.getElementById('inputDataAberturaDatas').value = bqParaInput(json.data_abertura);
+        document.getElementById('inputDataFechamentoDatas').value = bqParaInput(json.data_fechamento);
+
+        alert(`✅ Datas preenchidas com dados do BigQuery!\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\n\nClique em 💾 Salvar Datas para confirmar.`);
+    } catch (e) {
+        alert('Erro ao buscar no BigQuery: ' + e.message);
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '🔄 Buscar do BigQuery';
+    }
 });
 
 document.getElementById('btnSalvarDatas')?.addEventListener('click', async function() {

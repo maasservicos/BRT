@@ -628,9 +628,12 @@
                     <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Deixe em branco para remover o fechamento.</p>
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="btnCancelarModalDatas" type="button" class="btn-ghost">Cancelar</button>
-                <button id="btnSalvarDatas" type="button" class="btn-primary">💾 Salvar Datas</button>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <button id="btnBuscarBigQueryDatas" type="button" class="btn-ghost" style="border: 1px solid #16a34a; color: #16a34a;">🔄 Buscar do BigQuery</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnCancelarModalDatas" type="button" class="btn-ghost">Cancelar</button>
+                    <button id="btnSalvarDatas" type="button" class="btn-primary">💾 Salvar Datas</button>
+                </div>
             </div>
         </div>
     </div>
