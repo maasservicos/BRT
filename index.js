@@ -296,9 +296,12 @@ app.put('/api/os/:id/gravar-servico', async (req, res) => {
  */
 app.get('/api/bigquery/diagnostico', async (req, res) => {
   try {
-    const [datasets] = await bigquery.getDatasets();
-    const lista = datasets.map(d => d.id);
-    return res.json({ datasets_encontrados: lista, total: lista.length });
+    const [metadata] = await bigquery.dataset('silver').getMetadata();
+    const [tables] = await bigquery.dataset('silver').getTables();
+    return res.json({
+      location: metadata.location,
+      tabelas: tables.map(t => t.id),
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message, code: err.code });
   }
