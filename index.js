@@ -349,7 +349,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       numero_os:        r.ID_SEQUENCIAL ?? null,
       status:           r.STATUS ?? '',
       data_abertura:    r.DATA_INICIO?.value  ?? r.DATA_INICIO  ?? null,
-      data_fechamento:  r.DATA_FIM?.value     ?? r.DATA_FIM     ?? null,
+      data_fechamento:  r.DATA_FIM?.value ?? r.DATA_FIM ?? r.UPDATED_AT?.value ?? r.UPDATED_AT ?? null,
       criado_em:        r.CREATED_AT?.value   ?? r.CREATED_AT   ?? null,
       atualizado_em:    r.UPDATED_AT?.value   ?? r.UPDATED_AT   ?? null,
       descricao_servico: r.DESCRICAO_SERVICO ?? '',
