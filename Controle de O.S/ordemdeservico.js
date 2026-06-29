@@ -1614,7 +1614,8 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
         const json = await resp.json();
         if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
 
-        const msg = `✅ Dados encontrados no BigQuery!\n\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\nAbertura: ${json.data_abertura || '—'}\nFechamento: ${json.data_fechamento || '—'}\n\nDescrição do Serviço:\n"${json.descricao_servico || '—'}"\n\nDeseja atualizar as datas desta O.S com esses dados?`;
+        const descBQ = (json.descricao_servico || '—').replace(/\n/g, ' ').trim();
+        const msg = `✅ Dados encontrados no BigQuery!\n\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\nAbertura: ${json.data_abertura || '—'}\nFechamento: ${json.data_fechamento || '—'}\n\nDescrição (BigQuery):\n"${descBQ}"\n\nDeseja atualizar as datas desta O.S com esses dados?`;
 
         if (!confirm(msg)) return;
 
