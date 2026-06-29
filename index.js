@@ -322,6 +322,14 @@ app.get('/api/bigquery/diagnostico', async (req, res) => {
  * ROTA: GET /api/bigquery/os/:prefixo
  * Busca no BigQuery a O.S mais recente de um veículo pelo prefixo.
  */
+const similaridade = (a, b) => {
+  const palavras = s => new Set(s.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/).filter(Boolean));
+  const pa = palavras(a), pb = palavras(b);
+  let comum = 0;
+  for (const p of pa) if (pb.has(p)) comum++;
+  return pa.size === 0 ? 0 : comum / pa.size;
+};
+
 app.get('/api/bigquery/os/:prefixo', async (req, res) => {
   const prefixo = parseInt(req.params.prefixo, 10);
   if (isNaN(prefixo)) return res.status(400).json({ error: 'Prefixo inválido.' });
@@ -330,6 +338,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
 
   const query = `
     SELECT
+      v.PREFIXO,
       os.ID_SEQUENCIAL,
       os.STATUS,
       os.DATA_FIM,
@@ -340,19 +349,15 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
     WHERE v.PREFIXO = @prefixo
-      ${defeito ? 'AND UPPER(TRIM(os.DESCRICAO_SERVICO)) = UPPER(TRIM(@defeito))' : ''}
     ORDER BY os.CREATED_AT DESC
-    LIMIT 1
+    LIMIT 50
   `;
-
-  const params = defeito ? { prefixo, defeito } : { prefixo };
-  const types  = defeito ? { prefixo: 'INT64', defeito: 'STRING' } : { prefixo: 'INT64' };
 
   try {
     const [rows] = await bigquery.query({
       query,
-      params,
-      types,
+      params: { prefixo },
+      types: { prefixo: 'INT64' },
       location: 'us-east1',
     });
 
@@ -360,15 +365,32 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       return res.status(404).json({ error: `Nenhum registro encontrado no BigQuery para o prefixo ${prefixo}.` });
     }
 
-    const r = rows[0];
+    let melhor = rows[0];
+
+    if (defeito) {
+      // 1. Tenta match exato
+      const exato = rows.find(r =>
+        (r.DESCRICAO_SERVICO ?? '').trim().toUpperCase() === defeito.toUpperCase()
+      );
+      if (exato) {
+        melhor = exato;
+      } else {
+        // 2. Fallback: mais parecido por sobreposição de palavras
+        let maxScore = -1;
+        for (const r of rows) {
+          const score = similaridade(defeito, r.DESCRICAO_SERVICO ?? '');
+          if (score > maxScore) { maxScore = score; melhor = r; }
+        }
+      }
+    }
+
     return res.json({
-      numero_os:        r.ID_SEQUENCIAL ?? null,
-      status:           r.STATUS ?? '',
-      data_abertura:    formatarDataHora(r.CREATED_AT),
-      data_fechamento:  formatarDataHora(r.DATA_FIM ?? r.UPDATED_AT),
-      criado_em:        formatarDataHora(r.CREATED_AT),
-      atualizado_em:    formatarDataHora(r.UPDATED_AT),
-      descricao_servico: r.DESCRICAO_SERVICO ?? '',
+      prefixo:          melhor.PREFIXO ?? prefixo,
+      numero_os:        melhor.ID_SEQUENCIAL ?? null,
+      status:           melhor.STATUS ?? '',
+      descricao_servico: melhor.DESCRICAO_SERVICO ?? '',
+      data_abertura:    formatarDataHora(melhor.CREATED_AT),
+      data_fechamento:  formatarDataHora(melhor.DATA_FIM ?? melhor.UPDATED_AT),
     });
   } catch (err) {
     console.error('Erro BigQuery (individual):', err);
