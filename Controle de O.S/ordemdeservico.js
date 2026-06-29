@@ -1615,11 +1615,12 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
         if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
 
         // Preenche e exibe o modal de resultado
-        document.getElementById('bqNumOS').innerText    = `#${json.numero_os}`;
-        document.getElementById('bqStatus').innerText   = json.status || '—';
-        document.getElementById('bqAbertura').innerText = json.data_abertura || '—';
-        document.getElementById('bqFechamento').innerText = json.data_fechamento || '—';
-        document.getElementById('bqDescricao').innerText  = (json.descricao_servico || '—').replace(/\n/g, ' ').trim();
+        document.getElementById('bqNumOS').innerText       = `#${json.numero_os}`;
+        document.getElementById('bqStatus').innerText      = json.status || '—';
+        document.getElementById('bqAbertura').innerText    = json.data_abertura || '—';
+        document.getElementById('bqFechamento').innerText  = json.data_fechamento || '—';
+        document.getElementById('bqDefeitoLocal').innerText = defeito || '—';
+        document.getElementById('bqDescricao').innerText   = json.descricao_servico ? json.descricao_servico.replace(/\n/g, ' ').trim() : '(sem descrição no BigQuery)';
         document.getElementById('modalResultadoBQ').classList.remove('hidden');
 
         // Converte "DD/MM/YYYY, HH:MM:SS" → ISO para salvar no Supabase
