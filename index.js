@@ -316,6 +316,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       query,
       params: { prefixo },
       types: { prefixo: 'INT64' },
+      location: 'southamerica-east1',
     });
 
     if (!rows.length) {
@@ -376,6 +377,7 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
       query,
       params: { prefixos },
       types: { prefixos: ['INT64'] },
+      location: 'southamerica-east1',
     });
 
     // Indexa resultados do BigQuery por prefixo para lookup O(1)
