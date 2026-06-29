@@ -1594,13 +1594,17 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
     if (!window.idOSGlobal) return alert('Carregue uma O.S antes de sincronizar.');
 
     const prefixo = document.getElementById('txtPrefixo').value.trim();
+    const defeito = document.getElementById('txtDefeito').value.trim();
+
     if (!prefixo) return alert('A O.S não tem prefixo definido.');
+    if (!defeito) return alert('A O.S não tem defeito relatado definido.');
 
     this.disabled = true;
     this.innerText = '⏳ Consultando...';
 
     try {
-        const resp = await fetch(`${API_BASE}/api/bigquery/os/${prefixo}`);
+        const url = `${API_BASE}/api/bigquery/os/${prefixo}?defeito=${encodeURIComponent(defeito)}`;
+        const resp = await fetch(url);
         const contentType = resp.headers.get('content-type') || '';
 
         if (!contentType.includes('application/json')) {
@@ -1610,16 +1614,26 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
         const json = await resp.json();
         if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
 
-        // Atualiza Supabase
+        const msg = `✅ Dados encontrados no BigQuery!\n\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\nAbertura: ${json.data_abertura || '—'}\nFechamento: ${json.data_fechamento || '—'}\n\nDeseja atualizar as datas desta O.S com esses dados?`;
+
+        if (!confirm(msg)) return;
+
+        // Converte "DD/MM/YYYY, HH:MM:SS" → ISO para salvar no Supabase
+        const bqParaISO = (str) => {
+            if (!str) return null;
+            const [datePart, timePart] = str.split(', ');
+            const [dia, mes, ano] = datePart.split('/');
+            return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
+        };
+
         await dbService.execute(
             client.from('Ordens_Servico').update({
-                data_abertura:    json.data_abertura,
-                data_fechamento:  json.data_fechamento,
-                defeito_relatado: json.descricao_servico,
+                data_abertura:   bqParaISO(json.data_abertura),
+                data_fechamento: bqParaISO(json.data_fechamento),
             }).eq('id', window.idOSGlobal)
         );
 
-        alert(`✅ Sincronizado com BigQuery!\nAbertura: ${json.data_abertura || '—'}\nFechamento: ${json.data_fechamento || '—'}`);
+        alert('✅ Datas sincronizadas com sucesso!');
         window.location.reload();
     } catch (e) {
         alert('Erro ao sincronizar: ' + e.message);
