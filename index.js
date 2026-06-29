@@ -316,10 +316,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
   if (isNaN(prefixo)) return res.status(400).json({ error: 'Prefixo inválido.' });
 
   const query = `
-    SELECT
-      os.CREATED_AT,
-      os.UPDATED_AT,
-      os.DESCRICAO_SERVICO
+    SELECT os.*
     FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
@@ -341,11 +338,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     }
 
     const r = rows[0];
-    return res.json({
-      data_abertura:   r.CREATED_AT?.value ?? r.CREATED_AT ?? null,
-      data_fechamento: r.UPDATE_AT?.value  ?? r.UPDATE_AT  ?? null,
-      descricao_servico: r.DESCRICAO_SERVICO ?? '',
-    });
+    return res.json(r);
   } catch (err) {
     console.error('Erro BigQuery (individual):', err);
     return res.status(500).json({
