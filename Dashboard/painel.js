@@ -127,7 +127,6 @@ function renderizarTabela(lista, statusAtual = "FILTRADO") {
 
         // 🚀 ADICIONANDO O CLIQUE REAL
         tr.addEventListener('click', () => {
-            console.log("Clicou na OS:", os.numero_sequencial);
             localStorage.setItem('os_para_pesquisar', os.numero_sequencial);
             window.location.href = "../Controle de O.S/ordemdeservico.html"; 
         });
@@ -136,7 +135,7 @@ function renderizarTabela(lista, statusAtual = "FILTRADO") {
     });
 }
 function filtrarTabelaPorTexto(termo) {
-    const linhas = document.querySelectorAll('.linha-os');
+    const linhas = document.querySelectorAll('.linha-os-clicavel');
     linhas.forEach(linha => {
         const texto = linha.innerText.toLowerCase();
         linha.style.display = texto.includes(termo) ? '' : 'none';

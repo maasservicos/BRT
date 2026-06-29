@@ -37,7 +37,7 @@ document.getElementById('btnEntrar')?.addEventListener('click', async function(e
 
         // 4. O Roteador Inteligente (Manda cada um pro seu quadrado)
         if (usuario.grupo === 'BRT') {
-            window.location.href = "Ocorrência BRT\HTML\form.html"; // Coloque o caminho correto da sua pasta
+            window.location.href = "Ocorrência BRT/HTML/form.html";
         } 
         else if (usuario.grupo === 'Maas') {
             if (usuario.subgrupo === 'Manutencao') {

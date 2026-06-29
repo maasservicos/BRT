@@ -2,17 +2,150 @@ import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
+import { PDFParse } from 'pdf-parse';
+import { BigQuery } from '@google-cloud/bigquery';
 import 'dotenv/config';
 
 // 1. Inicializando o servidor Express
 const app = express();
-app.use(cors());
-app.use(express.json()); 
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
+app.use(express.json({ limit: '10mb' }));
 
 
-// 2. Inicializando os Clientes do Supabase e da IA do Gemini
+// 2. Inicializando os Clientes do Supabase, Gemini e BigQuery
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const bigquery = new BigQuery({
+  projectId: 'gcp-maas-proj-manutencao',
+  credentials: JSON.parse(process.env.BIGQUERY_CREDENTIALS || '{}'),
+});
+
+/**
+ * ROTA: POST /api/extrair-documento
+ * PDF  → extrai texto com pdf-parse + regex (gratuito, sem limite)
+ * Imagem → Gemini Vision
+ */
+app.post('/api/extrair-documento', async (req, res) => {
+  const { base64, mimeType } = req.body;
+
+  if (!base64 || !mimeType) {
+    return res.status(400).json({ error: 'Campos base64 e mimeType são obrigatórios.' });
+  }
+
+  try {
+    const buffer = Buffer.from(base64, 'base64');
+
+    if (mimeType === 'application/pdf') {
+      // --- PDF: extração local com regex, sem consumir API ---
+      const parser = new PDFParse({ data: buffer });
+      const pdfData = await parser.getText();
+      const texto = pdfData.text;
+
+      // Prefixo: "CARRO: 1:1231" → "1231"
+      const matchCarro = texto.match(/CARRO:\s*\d+:(\d+)/i);
+      const prefixo = matchCarro ? matchCarro[1].trim() : '';
+
+      // KM: "KM:14.941" → "14941" (ponto é separador de milhar no BR)
+      const matchKm = texto.match(/KM:\s*([\d.]+)/i);
+      const km = matchKm ? matchKm[1].replace(/\./g, '') : '';
+
+      // Defeito: linhas numeradas dentro da seção "Sintomas relatados pelo Motorista"
+      const linhas = texto.split(/\r?\n/);
+      const sintomas = [];
+      let dentroDaSessao = false;
+      for (const linha of linhas) {
+        const l = linha.trim();
+        if (!dentroDaSessao && /Sintomas relatados/i.test(l)) {
+          dentroDaSessao = true;
+          continue;
+        }
+        if (dentroDaSessao) {
+          if (/^Motorista|^Mec[âa]nico|^Discrimina/i.test(l)) break;
+          // Formato: "Descrição do defeito    1"  (texto primeiro, número no fim)
+          const m = l.match(/^(.+?)\s+\d+\s*$/);
+          if (m && m[1].trim().length > 2 && !/NÃO|SIM|CÓD/i.test(m[1])) {
+            sintomas.push(m[1].trim());
+          }
+        }
+      }
+      const defeito = sintomas.join('; ');
+
+      return res.json({ prefixo, km, defeito });
+
+    } else {
+      // --- Imagem: Gemini Vision ---
+      const prompt = `Analise esta imagem de "Solicitação de Serviço" da Metrobus e extraia:
+1. "prefixo": campo CARRO, apenas os dígitos após os dois pontos (ex: "1:1231" → "1231").
+2. "km": campo KM, apenas dígitos sem pontos (ex: "14.941" → "14941").
+3. "defeito": sintomas relatados pelo motorista, texto completo.
+Retorne APENAS JSON válido sem markdown. Exemplo: {"prefixo":"1231","km":"14941","defeito":"completar o oleo idraulico da direcao"}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{
+          parts: [
+            { inlineData: { mimeType, data: base64 } },
+            { text: prompt }
+          ]
+        }],
+        config: { temperature: 0 }
+      });
+
+      const textoResposta = response.text.trim().replace(/^```json\s*/i, '').replace(/```$/, '');
+      const dados = JSON.parse(textoResposta);
+
+      return res.json({
+        prefixo: dados.prefixo || '',
+        km: dados.km || '',
+        defeito: dados.defeito || ''
+      });
+    }
+
+  } catch (erro) {
+    console.error('Erro ao extrair documento:', erro);
+    return res.status(500).json({ error: 'Erro ao processar o documento.' });
+  }
+});
+
+/**
+ * ROTA: POST /api/sugerir-etapa
+ * Recebe defeito + lista de etapas BR e retorna a mais adequada via Gemini.
+ */
+app.post('/api/sugerir-etapa', async (req, res) => {
+  const { defeito, etapas } = req.body;
+
+  if (!defeito || !etapas || etapas.length === 0) {
+    return res.status(400).json({ error: 'defeito e etapas são obrigatórios.' });
+  }
+
+  const listaEtapas = etapas.map(e => `${e.codigo_etapa}: ${e.descricao}`).join('\n');
+
+  const prompt = `Você é um especialista em manutenção de ônibus BRT. Analise o defeito relatado e escolha a etapa de manutenção mais adequada da lista abaixo.
+
+Defeito relatado: "${defeito}"
+
+Etapas disponíveis:
+${listaEtapas}
+
+Retorne APENAS um JSON válido sem markdown, sem texto adicional. Exemplo: {"codigo":"BR0001","descricao":"Descrição da etapa"}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { temperature: 0 }
+    });
+
+    const texto = response.text.trim().replace(/^```json\s*/i, '').replace(/```$/, '');
+    const resultado = JSON.parse(texto);
+
+    return res.json({ codigo: resultado.codigo || '', descricao: resultado.descricao || '' });
+  } catch (erro) {
+    console.error('Erro ao sugerir etapa:', erro);
+    return res.status(500).json({ error: 'Erro ao processar sugestão de etapa.' });
+  }
+});
 
 /**
  * ROTA: GET /api/os/:id/sugerir-servico
@@ -153,6 +286,132 @@ app.put('/api/os/:id/gravar-servico', async (req, res) => {
   } catch (error) {
     console.error('Erro interno na rota de gravação:', error);
     return res.status(500).json({ error: 'Erro interno ao processar a gravação.' });
+  }
+});
+
+/**
+ * ROTA: GET /api/bigquery/os/:prefixo
+ * Busca no BigQuery a O.S mais recente de um veículo pelo prefixo.
+ */
+app.get('/api/bigquery/os/:prefixo', async (req, res) => {
+  const prefixo = parseInt(req.params.prefixo, 10);
+  if (isNaN(prefixo)) return res.status(400).json({ error: 'Prefixo inválido.' });
+
+  const query = `
+    SELECT
+      os.CREATED_AT,
+      os.UPDATE_AT,
+      os.DESCRICAO_SERVICO
+    FROM \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_VEICULOS\`  v
+    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
+    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_OS\`          os ON os.SOLICITACAO_ID = s.UUID
+    WHERE v.PREFIXO = @prefixo
+    ORDER BY os.CREATED_AT DESC
+    LIMIT 1
+  `;
+
+  try {
+    const [rows] = await bigquery.query({
+      query,
+      params: { prefixo },
+      types: { prefixo: 'INT64' },
+    });
+
+    if (!rows.length) {
+      return res.status(404).json({ error: `Nenhum registro encontrado no BigQuery para o prefixo ${prefixo}.` });
+    }
+
+    const r = rows[0];
+    return res.json({
+      data_abertura:   r.CREATED_AT?.value ?? r.CREATED_AT ?? null,
+      data_fechamento: r.UPDATE_AT?.value  ?? r.UPDATE_AT  ?? null,
+      descricao_servico: r.DESCRICAO_SERVICO ?? '',
+    });
+  } catch (err) {
+    console.error('Erro BigQuery (individual):', err);
+    return res.status(500).json({ error: 'Erro ao consultar o BigQuery.' });
+  }
+});
+
+/**
+ * ROTA: POST /api/bigquery/sincronizar-lote
+ * Recebe [{id_supabase, prefixo}], faz uma única query BigQuery com UNNEST,
+ * e atualiza data_abertura, data_fechamento e defeito_relatado no Supabase.
+ */
+app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
+  const { registros } = req.body;
+  if (!Array.isArray(registros) || registros.length === 0) {
+    return res.status(400).json({ error: 'Forneça um array de registros.' });
+  }
+
+  const prefixos = registros
+    .map(r => parseInt(r.prefixo, 10))
+    .filter(p => !isNaN(p));
+
+  if (prefixos.length === 0) {
+    return res.status(400).json({ error: 'Nenhum prefixo válido informado.' });
+  }
+
+  const query = `
+    SELECT
+      v.PREFIXO,
+      os.CREATED_AT,
+      os.UPDATE_AT,
+      os.DESCRICAO_SERVICO
+    FROM \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_VEICULOS\`  v
+    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
+    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_OS\`          os ON os.SOLICITACAO_ID = s.UUID
+    WHERE v.PREFIXO IN UNNEST(@prefixos)
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.PREFIXO ORDER BY os.CREATED_AT DESC) = 1
+  `;
+
+  try {
+    const [rows] = await bigquery.query({
+      query,
+      params: { prefixos },
+      types: { prefixos: ['INT64'] },
+    });
+
+    // Indexa resultados do BigQuery por prefixo para lookup O(1)
+    const bqMap = {};
+    for (const r of rows) {
+      bqMap[String(r.PREFIXO)] = {
+        data_abertura:    r.CREATED_AT?.value ?? r.CREATED_AT ?? null,
+        data_fechamento:  r.UPDATE_AT?.value  ?? r.UPDATE_AT  ?? null,
+        descricao_servico: r.DESCRICAO_SERVICO ?? '',
+      };
+    }
+
+    const resultados = [];
+    for (const reg of registros) {
+      const prefixo = parseInt(reg.prefixo, 10);
+      const bq = bqMap[String(prefixo)];
+
+      if (!bq) {
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: 'Não encontrado no BigQuery' });
+        continue;
+      }
+
+      const { error } = await supabase
+        .from('Ordens_Servico')
+        .update({
+          data_abertura:    bq.data_abertura,
+          data_fechamento:  bq.data_fechamento,
+          defeito_relatado: bq.descricao_servico,
+        })
+        .eq('id', reg.id_supabase);
+
+      if (error) {
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: error.message });
+      } else {
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: true, ...bq });
+      }
+    }
+
+    return res.json({ resultados });
+  } catch (err) {
+    console.error('Erro BigQuery (lote):', err);
+    return res.status(500).json({ error: 'Erro ao consultar o BigQuery.' });
   }
 });
 

@@ -3,3 +3,8 @@
 
 # Pastas de dependências (não precisam ir para o Git pois o npm install baixa elas)
 node_modules/
+
+# Arquivos do Windows Explorer
+Thumbs.db
+Desktop.ini
+ehthumbs.db

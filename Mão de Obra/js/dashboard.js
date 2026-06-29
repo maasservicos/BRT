@@ -225,9 +225,8 @@ function renderizarTabelaPrincipal() {
             temDado = true;
             
             const dataObj = new Date(item.created_at);
-            dataObj.setHours(dataObj.getHours() - 3);
-            const hora = dataObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-            const dataFmt = dataObj.toLocaleDateString('pt-BR');
+            const hora = dataObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'});
+            const dataFmt = dataObj.toLocaleDateString('pt-BR', {timeZone:'America/Sao_Paulo'});
             
             const infoFunc = mapaFuncionariosBRT[item.matricula] || { nome: "Desconhecido", valor: 0 };
             const nomeFunc = infoFunc.nome;
@@ -291,8 +290,7 @@ window.verHistorico = function(osAlvo) {
 
     historicoOS.forEach(item => {
         const dataObj = new Date(item.created_at);
-        dataObj.setHours(dataObj.getHours() - 3);
-        const dh = `${dataObj.toLocaleDateString()} ${dataObj.toLocaleTimeString()}`;
+        const dh = `${dataObj.toLocaleDateString('pt-BR', {timeZone:'America/Sao_Paulo'})} ${dataObj.toLocaleTimeString('pt-BR', {timeZone:'America/Sao_Paulo'})}`;
         
         const info = mapaFuncionariosBRT[item.matricula] || { nome: item.matricula };
         
@@ -346,8 +344,6 @@ window.exportarExcelDashboard = async function() {
             
             // 1. Tratamento de Data Visual
             const dataObj = new Date(item.created_at);
-            dataObj.setHours(dataObj.getHours() - 3); // Fuso Brasil
-            
             const info = mapaFuncionariosBRT[item.matricula] || { nome: "N/D" };
             
             // 2. O CÉREBRO: Chamamos a mesma função da tabela!
@@ -361,8 +357,8 @@ window.exportarExcelDashboard = async function() {
 
             // 4. Montagem da Linha do Excel
             return {
-                "Data": dataObj.toLocaleDateString(),
-                "Hora": dataObj.toLocaleTimeString(),
+                "Data": dataObj.toLocaleDateString('pt-BR', {timeZone:'America/Sao_Paulo'}),
+                "Hora": dataObj.toLocaleTimeString('pt-BR', {timeZone:'America/Sao_Paulo'}),
                 "Matrícula": item.matricula,
                 "Colaborador": info.nome,
                 "O.S.": item.os,

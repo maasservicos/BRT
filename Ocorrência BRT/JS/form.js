@@ -1,5 +1,7 @@
 import { client } from './supabaseClient.js';
 
+const API_BASE = 'http://localhost:3000';
+
 // =====================================================================
 // 🔒 GUARDA DE ROTA E 👤 DADOS DO USUÁRIO LOGADO (GRUPO BRT)
 // =====================================================================
@@ -65,12 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if(confirm("Deseja realmente sair do sistema?")) {
             localStorage.removeItem('maas_usuario_logado');
-            window.location.href = "/index.html"; 
+            window.location.href = "/index.html";
         }
     });
 
     configurarEventosOcorrencia();
     configurarEventosBuscaVeiculo();
+    configurarImportacaoSS();
     preencherDataAbertura();
 });
 
@@ -381,6 +384,87 @@ if (campoStatus) {
 
 function preencherDataAbertura() {
     const hoje = new Date();
-    // Preenche o campo de data com DD/MM/AAAA para ficar amigável na tela
     txtDataAbertura.value = hoje.toLocaleDateString('pt-BR');
+}
+
+// ============================================================================
+// 6. IMPORTAÇÃO AUTOMÁTICA DE S.S METROBUS (PDF / IMAGEM)
+// ============================================================================
+function configurarImportacaoSS() {
+    const btnImportar = document.getElementById('btnImportarSS');
+    const inputArquivo = document.getElementById('inputArquivoSS');
+    const lblStatus = document.getElementById('lblStatusImportacao');
+
+    if (!btnImportar || !inputArquivo) return;
+
+    btnImportar.addEventListener('click', () => inputArquivo.click());
+
+    inputArquivo.addEventListener('change', async () => {
+        const arquivo = inputArquivo.files[0];
+        if (!arquivo) return;
+
+        lblStatus.style.color = '#6b7280';
+        lblStatus.textContent = `⏳ Lendo "${arquivo.name}"...`;
+        btnImportar.disabled = true;
+
+        try {
+            const base64 = await lerArquivoComoBase64(arquivo);
+            const mimeType = arquivo.type || 'application/pdf';
+
+            const resposta = await fetch(`${API_BASE}/api/extrair-documento`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ base64, mimeType })
+            });
+
+            if (!resposta.ok) {
+                const err = await resposta.json();
+                throw new Error(err.error || 'Erro no servidor.');
+            }
+
+            const dados = await resposta.json();
+
+            // Gera o número da ocorrência automaticamente
+            await gerarProximoNumeroOcorrencia();
+
+            // Preenche os campos extraídos
+            if (dados.prefixo) {
+                txtPrefixoOcorrencia.value = dados.prefixo;
+                await buscarVeiculoDireto(dados.prefixo);
+            }
+            if (dados.km) {
+                txtKmAtualOcorrencia.value = dados.km;
+            }
+            if (dados.defeito) {
+                txtDefeitoRelatado.value = dados.defeito;
+            }
+
+            // Locais Constantes fixo para Garagem BRT
+            cboLocaisConstantes.value = 'Garagem-BRT';
+
+            lblStatus.style.color = '#22c55e';
+            lblStatus.textContent = '✅ Documento importado! Confira os dados e salve.';
+
+        } catch (erro) {
+            console.error('Erro na importação:', erro);
+            lblStatus.style.color = '#ef4444';
+            lblStatus.textContent = `❌ Falha: ${erro.message}`;
+        } finally {
+            btnImportar.disabled = false;
+            inputArquivo.value = '';
+        }
+    });
+}
+
+function lerArquivoComoBase64(arquivo) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64Completo = e.target.result;
+            const base64Puro = base64Completo.split(',')[1];
+            resolve(base64Puro);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(arquivo);
+    });
 }

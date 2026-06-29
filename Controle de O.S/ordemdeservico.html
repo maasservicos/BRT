@@ -333,6 +333,10 @@
                     <div class="actions">
                         <button id="btnSalvarOS" type="button" class="btn-primary">💾 Salvar O.S</button>
                         <button id="btnFinalizarOS" type="button" class="btn-success">✅ Finalizar O.S</button>
+                        <button id="btnAcoesLote" type="button" class="btn-ghost" style="border: 1px solid #6366f1; color: #6366f1;">📦 Ações em Lote</button>
+                        <button id="btnAlterarDatas" type="button" class="btn-ghost" style="border: 1px solid #0ea5e9; color: #0ea5e9;">📅 Alterar Datas</button>
+                        <button id="btnConsultarFechadas" type="button" class="btn-ghost" style="border: 1px solid #64748b; color: #64748b;">📋 O.S Fechadas</button>
+                        <button id="btnSincronizarBQ" type="button" class="btn-ghost" style="border: 1px solid #16a34a; color: #16a34a;">🔄 BigQuery</button>
                         <button id="btnImprimirOS" type="button" class="btn-ghost" onclick="window.print()">🖨️ Imprimir</button>
                         <button type="reset" class="btn-secondary" onclick="window.location.reload()">Limpar Tela</button>
                     </div>
@@ -540,6 +544,158 @@
         </div>
     </div>
  
+    <!-- ================================================================
+         MODAL: CONSULTA O.S FECHADAS
+    ================================================================ -->
+    <div id="modalOSFechadas" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 1000px; width: 97%;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 18px;">📋</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Consulta — O.S Fechadas</h3>
+                        <p style="margin: 0; font-size: 12px; color: #ffffff;">Filtradas por data de fechamento</p>
+                    </div>
+                </div>
+                <button id="btnFecharModalOSFechadas" type="button" class="btn-close">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Filtro de período -->
+                <div style="display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px;">Data Início</label>
+                        <input type="date" id="filtroDataInicioFechadas" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px;">Data Fim</label>
+                        <input type="date" id="filtroDataFimFechadas" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <button id="btnFiltrarOSFechadas" type="button" class="btn-primary" style="padding: 7px 18px; font-size: 13px;">🔍 Filtrar</button>
+                    <span id="lblTotalOSFechadas" style="font-size: 13px; color: #6b7280; margin-left: 4px;"></span>
+                </div>
+
+                <!-- Tabela -->
+                <div style="max-height: 420px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="position: sticky; top: 0; z-index: 1;">
+                                <th style="text-align: left; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">Nº O.S</th>
+                                <th style="text-align: left; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">Prefixo</th>
+                                <th style="text-align: left; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0;">Defeito Relatado</th>
+                                <th style="text-align: left; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">Abertura</th>
+                                <th style="text-align: left; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">Fechamento</th>
+                                <th style="text-align: center; padding: 10px 12px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaOSFechadas">
+                            <tr><td colspan="6" style="text-align: center; padding: 30px; color: #94a3b8;">Selecione um período e clique em Filtrar.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button id="btnSincronizarLoteBQ" type="button" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #16a34a; background: #f0fdf4; color: #166534; cursor: pointer; font-size: 13px; font-weight: 600;">🔄 Sincronizar com BigQuery</button>
+                <button id="btnFecharModalOSFechadas2" type="button" class="btn-ghost">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         MODAL: ALTERAR DATAS DA O.S
+    ================================================================ -->
+    <div id="modalAlterarDatas" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; font-size: 18px;">📅</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Alterar Datas</h3>
+                        <p style="margin: 0; font-size: 12px; color: #ffffff;">O.S <span id="lblNumOSAlterarDatas"></span></p>
+                    </div>
+                </div>
+                <button id="btnFecharModalDatas" type="button" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px;">Data de Abertura</label>
+                    <input type="datetime-local" id="inputDataAberturaDatas" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px;">Data de Fechamento</label>
+                    <input type="datetime-local" id="inputDataFechamentoDatas" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                    <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Deixe em branco para remover o fechamento.</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btnCancelarModalDatas" type="button" class="btn-ghost">Cancelar</button>
+                <button id="btnSalvarDatas" type="button" class="btn-primary">💾 Salvar Datas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         MODAL: AÇÕES EM LOTE
+    ================================================================ -->
+    <div id="modalLote" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #ede9fe; display: flex; align-items: center; justify-content: center; font-size: 18px;">📦</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Ações em Lote</h3>
+                        <p style="margin: 0; font-size: 12px; color: #ffffff;">Selecione as O.S e escolha uma ação</p>
+                    </div>
+                </div>
+                <button id="btnFecharModalLote" type="button" class="btn-close">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 16px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: #374151;">
+                        <input type="checkbox" id="chkSelecionarTodosLote" style="width: 15px; height: 15px;">
+                        Selecionar Todos
+                    </label>
+                    <span id="lblContadorLote" style="font-size: 13px; color: #6b7280;">0 selecionadas</span>
+                </div>
+
+                <div style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="position: sticky; top: 0; z-index: 1;">
+                                <th style="text-align: center; padding: 10px 8px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0; width: 40px;">✓</th>
+                                <th style="text-align: left; padding: 10px 8px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0;">Nº O.S</th>
+                                <th style="text-align: left; padding: 10px 8px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0;">Prefixo</th>
+                                <th style="text-align: left; padding: 10px 8px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0;">Defeito Relatado</th>
+                                <th style="text-align: center; padding: 10px 8px; background: #f1f5f9; font-size: 12px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaOSLote">
+                            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="progressoLote" style="display: none; margin-top: 12px; padding: 12px 16px; background: #f0fdf4; border-radius: 8px; font-size: 13px; font-weight: 500; color: #166534; border: 1px solid #bbf7d0;">
+                    <span id="lblProgressoLote">Processando...</span>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <button id="btnFecharModalLote2" type="button" class="btn-ghost">Fechar</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnLoteValidacao" type="button" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #f59e0b; background: #fef3c7; color: #92400e; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        📤 Enviar p/ Validação
+                    </button>
+                    <button id="btnLoteFechamento" type="button" style="padding: 8px 16px; border-radius: 8px; border: none; background: #dcfce7; color: #166534; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        🔒 Fechar em Lote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <span style="font-weight: 600; color: #6b7280;">Versão 1.00-Homolog</span>
         <span style="margin: 0 0.5rem;">|</span>

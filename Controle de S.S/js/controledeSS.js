@@ -69,7 +69,6 @@ let estadoSS = {
 //2 - Funções do Formulário
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Tela de S.S carregada. Iniciando Sistema ...");
     
     // 👤 PREENCHE O NOME NO TOPO E CONFIGURA O LOGOUT
     const lblNome = document.getElementById('lblNomeUsuario');
@@ -141,8 +140,7 @@ function configurarEventosNumeroSS () {
             const numeroDigitado = txtNumSS.value.trim();
 
             if(numeroDigitado !== '') {
-                console.log(`Pesquisando S.S n° ${numeroDigitado} via Tab/Saída...`);
-                buscarSSTrazerDados(numeroDigitado); 
+                buscarSSTrazerDados(numeroDigitado);
             }
         });
 
@@ -183,7 +181,6 @@ async function buscarSSTrazerDados(numero) {
 
         if (data && data.length > 0) {
             const ss = data[0];
-            console.log("S.S. encontrada no banco!", ss);
             
             // 1. Liga o "Modo Edição" (Muito Importante!)
             estadoSS.editando = true;
@@ -309,7 +306,6 @@ function configurarEventosBuscaVeiculo() {
 // =====================================================================
 
 async function buscarVeiculoDireto(termo) {
-    console.log(`A fazer busca rápida por: ${termo}`);
     
     // Podemos mudar a cor do campo rapidamente para indicar que está a carregar
     const txtPlaca = document.getElementById('txtPlaca');
@@ -326,7 +322,6 @@ async function buscarVeiculoDireto(termo) {
 
         if (data && data.length > 0) {
             const veiculo = data[0];
-            console.log("Veículo encontrado na via rápida!");
             
             // Reaproveitamos a função que já criámos! 
             // Ela preenche os campos, bloqueia a edição e joga o cursor para o Defeito.
@@ -409,7 +404,6 @@ let query = client.from('View_Frota_Completa').select('*').order('prefixo', { as
 // A FUNÇÃO QUE TRANSFERE OS DADOS DO MODAL PARA A TELA PRINCIPAL
 // ---------------------------------------------------------------------
 function selecionarVeiculoDoModal(veiculo) {
-    console.log("Veículo selecionado:", veiculo);
 
     // 1. Guarda na memória
     estadoSS.veiculoId = veiculo.id;
@@ -465,17 +459,12 @@ function limparFormularioSS() {
     // 2. Zera os campos visuais principais (Pode adicionar os outros depois)
     gerarProximoNumeroSS();
     if (document.getElementById('txtPlacaSS')) document.getElementById('txtPlacaSS').value = '';
-    if (document.getElementById('txtNomeBem')) document.getElementById('txtNomeBem').value = '';
-    if (document.getElementById('txtTipoOnibus')) document.getElementById('txtTipoOnibus').value = '';
-    if (document.getElementById('txtKmAtual')) document.getElementById('txtKmAtual').value = '';
-    if (document.getElementById('txtDefeito')) document.getElementById('txtDefeito').value = '';
-
-    const campoStatus = document.getElementById('txtStatusSS');
-    if (campoStatus) {
-        campoStatus.style.color = '#3b82f6'; // 
-    }
-
-    if (document.getElementById('txtPlacaSS')) document.getElementById('txtPlacaSS').value = '';
+    if (document.getElementById('txtNomeBemSS')) document.getElementById('txtNomeBemSS').value = '';
+    if (document.getElementById('txtStatusSS')) document.getElementById('txtStatusSS').value = '';
+    if (document.getElementById('txtKMSS')) document.getElementById('txtKMSS').value = '';
+    if (document.getElementById('txtDescricaoSS')) document.getElementById('txtDescricaoSS').value = '';
+    if (document.getElementById('txtSintomaPrincipal')) document.getElementById('txtSintomaPrincipal').value = '';
+    if (document.getElementById('txtDescricaoLocalizacaoSS')) document.getElementById('txtDescricaoLocalizacaoSS').value = '';
     
     // 3. Atualiza a Data de Abertura para o segundo exato em que ele clicou em "Novo"
     preencherDataAbertura();
@@ -484,7 +473,6 @@ function limparFormularioSS() {
     const txtPlaca = document.getElementById('txtPlaca');
     if (txtPlaca) txtPlaca.focus();
     
-    console.log("Ecrã limpo. Pronto para nova S.S.");
 }
 
 // ==========================================
@@ -550,8 +538,6 @@ function configurarEventosModalSintomas() {
     const btnFechar = document.getElementById('btnFecharModalSintomas');
     const btnCancelar = document.getElementById('btnCancelarSintomas');
     const btnConfirmar = document.getElementById('btnConfirmarSintomaModal');
-    console.log("3. Encontrei o botão da lupa?", !!btnLupaSintoma);
-    console.log("4. Encontrei o modal?", !!modalSintomas);
 
     if (!modalSintomas) {
         console.warn("⚠️ ALERTA: Não achei o modal, abortando a função!");
@@ -563,8 +549,6 @@ function configurarEventosModalSintomas() {
     // -----------------------------------------------------------------
   if (btnLupaSintoma) {
         btnLupaSintoma.addEventListener('click', () => {
-            console.log("5. CLICOU NA LUPA! A abrir o modal..."); // Radar 3
-            
             modalSintomas.classList.remove('hidden');
             
             // CORREÇÃO: Usando o nome correto da variável
@@ -794,12 +778,9 @@ async function processarSalvamento(statusSS) {
 
    // 5. Envio para o Supabase (O DESVIO INTELIGENTE UPDATE vs INSERT)
     try {
-        console.log("Pacote pronto para envio:", pacoteSS);
 
         // Se pesquisámos a S.S. antes, a memória 'editando' estará verdadeira!
         if (estadoSS.idOcorrenciaOrigem) {
-            console.log(`Avisando a Ocorrência ${estadoSS.idOcorrenciaOrigem} que a S.S foi gerada...`);
-            
             const { error: erroOcorrencia } = await client
                 .from('Ocorrencia') // ATENÇÃO: Verifique se o nome da tabela é esse mesmo
                 .update({ status: 'Em Andamento' })
@@ -809,11 +790,9 @@ async function processarSalvamento(statusSS) {
                 console.error("Falha ao mudar status da ocorrência:", erroOcorrencia);
                 // Não travamos a tela por isso, mas deixamos registrado no log
             } else {
-                console.log("✅ Ocorrência atualizada para 'Em Andamento'!");
             }
         }
         if (estadoSS.editando) {
-            console.log("A atualizar S.S. existente no banco...");
             
             const { error } = await client
                 .from('Solicitacao_Servicos')
@@ -824,7 +803,6 @@ async function processarSalvamento(statusSS) {
         } 
         // Se for falso, é uma S.S. Nova!
         else {
-            console.log("A criar S.S. nova...");
             const { error } = await client
                 .from('Solicitacao_Servicos')
                 .insert([pacoteSS]);
@@ -923,7 +901,6 @@ async function buscarOcorrenciaPendentes() {
 }
 
 async function selecionarOcorrenciaParaSS(ocorrencia) {
-    console.log("Transformando Ocorrência em S.S:", ocorrencia);
 
     // Salva o ID da ocorrência na memória para quando você for salvar a S.S, você criar o vínculo!
     estadoSS.idOcorrenciaOrigem = ocorrencia.num_ocorrencia || ocorrencia.id_ocorrencia;
@@ -949,7 +926,13 @@ async function selecionarOcorrenciaParaSS(ocorrencia) {
     if (inputKMSS) inputKMSS.value = km;
     if (inputDescricaoSS) inputDescricaoSS.value = defeito;
     if (inputLocais) inputLocais.value = locais;
-    if (inputDescLocal) inputDescLocal.value = descLocais; 
+    if (inputDescLocal) inputDescLocal.value = descLocais;
+
+    // Tipo de Manutenção automático: PREVENTIVA se o defeito mencionar, senão CORRETIVA
+    const selectManutencao = document.getElementById('cboTipoManutencaoSS');
+    if (selectManutencao) {
+        selectManutencao.value = /preventiva/i.test(defeito) ? 'Preventiva' : 'Corretiva';
+    }
     
     // Fecha o modal
     const modal = document.getElementById('modalOcorrenciaPendentes');

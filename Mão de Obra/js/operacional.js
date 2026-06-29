@@ -141,8 +141,7 @@ async function carregarLista() {
     if(data && data.length > 0) {
         data.forEach(item => {
             const dataObj = new Date(item.created_at);
-            dataObj.setHours(dataObj.getHours() - 3);
-            const hora = dataObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const hora = dataObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo'});
             
             let badgeClass = "badge badge-gray";
             let texto = item.status_cod;
@@ -171,8 +170,6 @@ async function carregarLista() {
 
 // --- BOTÕES DE AÇÃO ---
 window.definirAcao = function(codigoStatus) {
-    console.log("Cliquei no botão com código:", codigoStatus); // Debug para saber se o clique funcionou
-
     // Validação básica
     if (!txtMatricula.value || !txtOS.value) {
         alert("Preencha todos os campos antes de clicar!");
@@ -209,7 +206,6 @@ window.fecharModal = function() {
 }
 
 window.confirmarEnvio = function() {
-    console.log("Confirmado no modal! Ação pendente:", statusPendente);
     if (statusPendente) {
         executarSalvamento(statusPendente);
         window.fecharModal();
@@ -218,60 +214,39 @@ window.confirmarEnvio = function() {
 // ---------------------------------------
 
 async function executarSalvamento(codigoStatus) {
-    console.log("--- INICIANDO SALVAMENTO ---");
-    console.log("Botão clicado:", codigoStatus);
-
     const matricula = txtMatricula.value;
     const os = txtOS.value.trim().padStart(6, '0');
     const dataHoraClick = new Date().toISOString();
 
-    // Começa como null (padrão para Início/Pausa)
-    let horasCalculadas = null; 
+    let horasCalculadas = null;
 
     document.body.style.cursor = 'wait';
 
-    // INVESTIGAÇÃO 1: O IF está funcionando?
     if (codigoStatus === 5 || codigoStatus === 7) {
-        console.log("✅ Entrou no IF de cálculo (Status 5 ou 7 detectado)");
-        
         try {
-            console.log(`🔍 Chamando calculadora para Matrícula: ${matricula}, OS: ${os}`);
-            
-            // O await é o suspeito número 1. Estamos forçando ele esperar.
             horasCalculadas = await calcularHorasTrabalhadas(matricula, os);
-            
-            console.log("💰 RESULTADO DO CÁLCULO:", horasCalculadas); // <--- O QUE APARECE AQUI?
         } catch (erro) {
             console.error("❌ ERRO NA CALCULADORA:", erro);
         }
-    } else {
-        console.log("⏩ Pulou o cálculo (Status não é de finalização)");
     }
 
-    // INVESTIGAÇÃO 2: O Payload final
-    const dadosParaSalvar = { 
-        matricula, 
-        os, 
-        status_cod: codigoStatus, 
+    const dadosParaSalvar = {
+        matricula,
+        os,
+        status_cod: codigoStatus,
         obs: "Web",
         created_at: dataHoraClick,
-        horas_trabalhadas: horasCalculadas // <--- Verifique se isso não está undefined
+        horas_trabalhadas: horasCalculadas
     };
 
-    console.log("📦 ENVIANDO PARA O SUPABASE:", dadosParaSalvar);
-
     const { error } = await client.from('ApontamentosBRT').insert([dadosParaSalvar]);
-    
+
     document.body.style.cursor = 'default';
 
     if (!error) {
         let mensagem = "✅ SALVO!";
         if (horasCalculadas) mensagem += `\nTempo: ${horasCalculadas}`;
-        
-        console.log("Sucesso! Mensagem:", mensagem);
         mostrarAviso(mensagem, "Reiniciando...");
-        
-        // Bloqueia e limpa (igual antes)
         setTimeout(() => window.limparTela(), 3000);
     } else {
         console.error("❌ ERRO DO SUPABASE:", error);
