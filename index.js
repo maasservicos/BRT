@@ -318,7 +318,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
   const query = `
     SELECT
       os.CREATED_AT,
-      os.UPDATE_AT,
+      os.UPDATED_AT,
       os.DESCRICAO_SERVICO
     FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
@@ -380,7 +380,7 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
     SELECT
       v.PREFIXO,
       os.CREATED_AT,
-      os.UPDATE_AT,
+      os.UPDATED_AT,
       os.DESCRICAO_SERVICO
     FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
@@ -402,7 +402,7 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
     for (const r of rows) {
       bqMap[String(r.PREFIXO)] = {
         data_abertura:    r.CREATED_AT?.value ?? r.CREATED_AT ?? null,
-        data_fechamento:  r.UPDATE_AT?.value  ?? r.UPDATE_AT  ?? null,
+        data_fechamento:  r.UPDATED_AT?.value  ?? r.UPDATED_AT  ?? null,
         descricao_servico: r.DESCRICAO_SERVICO ?? '',
       };
     }
