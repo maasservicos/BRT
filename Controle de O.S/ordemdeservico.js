@@ -1840,7 +1840,7 @@ async function carregarOSAbertasNoModal() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="text-align: center; padding: 8px; border-bottom: 1px solid #f1f5f9;">
-                    <input type="checkbox" class="chk-os-lote" data-id="${os.id}" data-num="${os.numero_sequencial}" style="width: 15px; height: 15px; cursor: pointer;">
+                    <input type="checkbox" class="chk-os-lote" data-id="${os.id}" data-num="${os.numero_sequencial}" data-prefixo="${os.prefixo_veiculo || ''}" data-defeito="${(os.defeito_relatado || '').replace(/"/g, '&quot;')}" style="width: 15px; height: 15px; cursor: pointer;">
                 </td>
                 <td style="padding: 8px; font-weight: 600; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${num}</td>
                 <td style="padding: 8px; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${os.prefixo_veiculo || '-'}</td>
@@ -1862,6 +1862,64 @@ function obterOSSelecionadas() {
         num: parseInt(chk.dataset.num)
     }));
 }
+
+document.getElementById('btnLoteBigQuery')?.addEventListener('click', async function() {
+    const selecionadas = Array.from(document.querySelectorAll('.chk-os-lote:checked')).map(chk => ({
+        id:      chk.dataset.id,
+        num:     parseInt(chk.dataset.num),
+        prefixo: chk.dataset.prefixo,
+        defeito: chk.dataset.defeito,
+    })).filter(r => r.prefixo && r.defeito);
+
+    if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S com prefixo e defeito definidos.');
+    if (!confirm(`Sincronizar datas de ${selecionadas.length} O.S com o BigQuery?\nA busca usará o defeito de cada O.S para encontrar o registro correto.`)) return;
+
+    const progresso  = document.getElementById('progressoLote');
+    const lblProgresso = document.getElementById('lblProgressoLote');
+    progresso.style.display = 'block';
+    progresso.style.background = '#eff6ff';
+    progresso.style.color = '#1e40af';
+    progresso.style.borderColor = '#bfdbfe';
+    this.disabled = true;
+
+    let ok = 0, falhou = 0;
+
+    const bqParaISO = (str) => {
+        if (!str) return null;
+        const [datePart, timePart] = str.split(', ');
+        const [dia, mes, ano] = datePart.split('/');
+        return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
+    };
+
+    for (const os of selecionadas) {
+        lblProgresso.innerText = `🔄 Buscando O.S ${String(os.num).padStart(6, '0')} no BigQuery... (${ok + falhou + 1}/${selecionadas.length})`;
+        try {
+            const url = `${API_BASE}/api/bigquery/os/${os.prefixo}?defeito=${encodeURIComponent(os.defeito)}`;
+            const resp = await fetch(url);
+            const json = await resp.json();
+
+            if (!resp.ok) throw new Error(json.error || 'Não encontrado');
+
+            await dbService.execute(
+                client.from('Ordens_Servico').update({
+                    data_abertura:   bqParaISO(json.data_abertura),
+                    data_fechamento: bqParaISO(json.data_fechamento),
+                }).eq('id', os.id)
+            );
+            ok++;
+        } catch (e) {
+            console.warn(`O.S ${os.num}: ${e.message}`);
+            falhou++;
+        }
+    }
+
+    progresso.style.background = '#f0fdf4';
+    progresso.style.color = '#166534';
+    progresso.style.borderColor = '#bbf7d0';
+    lblProgresso.innerText = `✅ ${ok} sincronizadas com sucesso. ${falhou > 0 ? `⚠️ ${falhou} não encontradas no BigQuery.` : ''}`;
+    this.disabled = false;
+    carregarOSAbertasNoModal();
+});
 
 document.getElementById('btnLoteValidacao')?.addEventListener('click', async function() {
     const selecionadas = obterOSSelecionadas();
