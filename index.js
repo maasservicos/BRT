@@ -6,6 +6,17 @@ import { PDFParse } from 'pdf-parse';
 import { BigQuery } from '@google-cloud/bigquery';
 import 'dotenv/config';
 
+const formatarDataHora = (valor) => {
+  if (!valor) return null;
+  const raw = valor?.value ?? valor;
+  if (!raw) return null;
+  return new Date(raw).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+};
+
 // 1. Inicializando o servidor Express
 const app = express();
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
@@ -348,10 +359,10 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     return res.json({
       numero_os:        r.ID_SEQUENCIAL ?? null,
       status:           r.STATUS ?? '',
-      data_abertura:    r.DATA_INICIO?.value  ?? r.DATA_INICIO  ?? null,
-      data_fechamento:  r.DATA_FIM?.value ?? r.DATA_FIM ?? r.UPDATED_AT?.value ?? r.UPDATED_AT ?? null,
-      criado_em:        r.CREATED_AT?.value   ?? r.CREATED_AT   ?? null,
-      atualizado_em:    r.UPDATED_AT?.value   ?? r.UPDATED_AT   ?? null,
+      data_abertura:    formatarDataHora(r.DATA_INICIO),
+      data_fechamento:  formatarDataHora(r.DATA_FIM ?? r.UPDATED_AT),
+      criado_em:        formatarDataHora(r.CREATED_AT),
+      atualizado_em:    formatarDataHora(r.UPDATED_AT),
       descricao_servico: r.DESCRICAO_SERVICO ?? '',
     });
   } catch (err) {
