@@ -330,7 +330,6 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     SELECT
       os.ID_SEQUENCIAL,
       os.STATUS,
-      os.DATA_INICIO,
       os.DATA_FIM,
       os.CREATED_AT,
       os.UPDATED_AT,
@@ -359,7 +358,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     return res.json({
       numero_os:        r.ID_SEQUENCIAL ?? null,
       status:           r.STATUS ?? '',
-      data_abertura:    formatarDataHora(r.DATA_INICIO),
+      data_abertura:    formatarDataHora(r.CREATED_AT),
       data_fechamento:  formatarDataHora(r.DATA_FIM ?? r.UPDATED_AT),
       criado_em:        formatarDataHora(r.CREATED_AT),
       atualizado_em:    formatarDataHora(r.UPDATED_AT),
