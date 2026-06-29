@@ -19,7 +19,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const bigquery = new BigQuery({
   projectId: 'gcp-maas-proj-manutencao',
   credentials: JSON.parse(process.env.BIGQUERY_CREDENTIALS || '{}'),
-  location: 'southamerica-east1',
+  location: 'us-east1',
 });
 
 /**
@@ -320,9 +320,9 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       os.CREATED_AT,
       os.UPDATE_AT,
       os.DESCRICAO_SERVICO
-    FROM \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_VEICULOS\`  v
-    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
-    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_OS\`          os ON os.SOLICITACAO_ID = s.UUID
+    FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
+    JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
+    JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
     WHERE v.PREFIXO = @prefixo
     ORDER BY os.CREATED_AT DESC
     LIMIT 1
@@ -333,7 +333,7 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       query,
       params: { prefixo },
       types: { prefixo: 'INT64' },
-      location: 'southamerica-east1',
+      location: 'us-east1',
     });
 
     if (!rows.length) {
@@ -382,9 +382,9 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
       os.CREATED_AT,
       os.UPDATE_AT,
       os.DESCRICAO_SERVICO
-    FROM \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_VEICULOS\`  v
-    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
-    JOIN \`gcp-maas-proj-manutencao.SILVER_SIAN.SILVER_SIAN_SUPABASE_OS\`          os ON os.SOLICITACAO_ID = s.UUID
+    FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
+    JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
+    JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
     WHERE v.PREFIXO IN UNNEST(@prefixos)
     QUALIFY ROW_NUMBER() OVER (PARTITION BY v.PREFIXO ORDER BY os.CREATED_AT DESC) = 1
   `;
@@ -394,7 +394,7 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
       query,
       params: { prefixos },
       types: { prefixos: ['INT64'] },
-      location: 'southamerica-east1',
+      location: 'us-east1',
     });
 
     // Indexa resultados do BigQuery por prefixo para lookup O(1)
