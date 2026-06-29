@@ -365,22 +365,24 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
       return res.status(404).json({ error: `Nenhum registro encontrado no BigQuery para o prefixo ${prefixo}.` });
     }
 
-    let melhor = rows[0];
+    if (!defeito) {
+      return res.status(400).json({ error: 'O parâmetro defeito é obrigatório.' });
+    }
 
-    if (defeito) {
-      // 1. Tenta match exato
-      const exato = rows.find(r =>
-        (r.DESCRICAO_SERVICO ?? '').trim().toUpperCase() === defeito.toUpperCase()
-      );
-      if (exato) {
-        melhor = exato;
-      } else {
-        // 2. Fallback: mais parecido por sobreposição de palavras
-        let maxScore = -1;
-        for (const r of rows) {
-          const score = similaridade(defeito, r.DESCRICAO_SERVICO ?? '');
-          if (score > maxScore) { maxScore = score; melhor = r; }
-        }
+    // 1. Tenta match exato
+    let melhor = rows.find(r =>
+      (r.DESCRICAO_SERVICO ?? '').trim().toUpperCase() === defeito.toUpperCase()
+    );
+
+    // 2. Fallback: mais parecido por sobreposição de palavras (mínimo 30%)
+    if (!melhor) {
+      let maxScore = 0;
+      for (const r of rows) {
+        const score = similaridade(defeito, r.DESCRICAO_SERVICO ?? '');
+        if (score > maxScore) { maxScore = score; melhor = r; }
+      }
+      if (maxScore < 0.3) {
+        return res.status(404).json({ error: 'Não foi possível encontrar a O.S. correspondente ao defeito informado.' });
       }
     }
 
