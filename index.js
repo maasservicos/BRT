@@ -330,7 +330,12 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
     });
   } catch (err) {
     console.error('Erro BigQuery (individual):', err);
-    return res.status(500).json({ error: err.message || 'Erro ao consultar o BigQuery.' });
+    return res.status(500).json({
+      error: err.message || 'Sem mensagem',
+      code: err.code,
+      status: err.status,
+      errors: err.errors,
+    });
   }
 });
 
