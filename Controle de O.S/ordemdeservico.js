@@ -1526,6 +1526,15 @@ document.getElementById('btnBuscarBigQueryDatas')?.addEventListener('click', asy
 
         if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
 
+        // Preenche o modal de comparação
+        document.getElementById('bqNumOS').innerText        = `#${json.numero_os}`;
+        document.getElementById('bqStatus').innerText       = json.status || '—';
+        document.getElementById('bqAbertura').innerText     = json.data_abertura || '—';
+        document.getElementById('bqFechamento').innerText   = json.data_fechamento || '—';
+        document.getElementById('bqDefeitoLocal').innerText = _defeitoOSEditandoDatas || '—';
+        document.getElementById('bqDescricao').innerText    = json.descricao_servico ? json.descricao_servico.replace(/\n/g, ' ').trim() : '(sem descrição no BigQuery)';
+        document.getElementById('modalResultadoBQ').classList.remove('hidden');
+
         // Converte "DD/MM/YYYY, HH:MM:SS" → "YYYY-MM-DDTHH:MM"
         const bqParaInput = (str) => {
             if (!str) return '';
@@ -1535,10 +1544,17 @@ document.getElementById('btnBuscarBigQueryDatas')?.addEventListener('click', asy
             return `${ano}-${mes}-${dia}T${h}:${m}`;
         };
 
-        document.getElementById('inputDataAberturaDatas').value = bqParaInput(json.data_abertura);
-        document.getElementById('inputDataFechamentoDatas').value = bqParaInput(json.data_fechamento);
+        // Ao confirmar: preenche os inputs do modalAlterarDatas (não salva ainda)
+        document.getElementById('btnConfirmarBQ').onclick = () => {
+            document.getElementById('inputDataAberturaDatas').value   = bqParaInput(json.data_abertura);
+            document.getElementById('inputDataFechamentoDatas').value = bqParaInput(json.data_fechamento);
+            document.getElementById('modalResultadoBQ').classList.add('hidden');
+        };
 
-        alert(`✅ Datas preenchidas com dados do BigQuery!\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\n\nClique em 💾 Salvar Datas para confirmar.`);
+        document.getElementById('btnCancelarBQ').onclick = () => {
+            document.getElementById('modalResultadoBQ').classList.add('hidden');
+        };
+
     } catch (e) {
         alert('Erro ao buscar no BigQuery: ' + e.message);
     } finally {
