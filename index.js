@@ -291,6 +291,23 @@ app.put('/api/os/:id/gravar-servico', async (req, res) => {
 });
 
 /**
+ * ROTA: GET /api/bigquery/diagnostico
+ * Retorna a localização real do dataset SILVER_SIAN.
+ */
+app.get('/api/bigquery/diagnostico', async (req, res) => {
+  try {
+    const [metadata] = await bigquery.dataset('SILVER_SIAN').getMetadata();
+    return res.json({
+      location: metadata.location,
+      datasetId: metadata.datasetReference?.datasetId,
+      projectId: metadata.datasetReference?.projectId,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message, code: err.code });
+  }
+});
+
+/**
  * ROTA: GET /api/bigquery/os/:prefixo
  * Busca no BigQuery a O.S mais recente de um veículo pelo prefixo.
  */
