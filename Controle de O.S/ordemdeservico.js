@@ -1863,25 +1863,30 @@ function obterOSSelecionadas() {
     }));
 }
 
-document.getElementById('btnLoteBigQuery')?.addEventListener('click', async function() {
-    const selecionadas = Array.from(document.querySelectorAll('.chk-os-lote:checked')).map(chk => ({
+function obterOSSelecionadasComDados() {
+    return Array.from(document.querySelectorAll('.chk-os-lote:checked')).map(chk => ({
         id:      chk.dataset.id,
         num:     parseInt(chk.dataset.num),
         prefixo: chk.dataset.prefixo,
         defeito: chk.dataset.defeito,
     })).filter(r => r.prefixo && r.defeito);
+}
 
-    if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S com prefixo e defeito definidos.');
+const bqParaISO = (str) => {
+    if (!str) return null;
+    const [datePart, timePart] = str.split(', ');
+    const [dia, mes, ano] = datePart.split('/');
+    return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
+};
 
+async function buscarLoteBigQuery(selecionadas, labelBotaoConfirmar, onConfirmar) {
     const progresso    = document.getElementById('progressoLote');
     const lblProgresso = document.getElementById('lblProgressoLote');
     progresso.style.display = 'block';
     progresso.style.background = '#eff6ff';
     progresso.style.color = '#1e40af';
     progresso.style.borderColor = '#bfdbfe';
-    this.disabled = true;
 
-    // 1. Busca todos no BigQuery e monta lista de resultados
     const resultados = [];
     for (let i = 0; i < selecionadas.length; i++) {
         const os = selecionadas[i];
@@ -1896,13 +1901,11 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
         }
     }
 
-    this.disabled = false;
     progresso.style.display = 'none';
 
-    // 2. Monta tabela de comparação
+    const encontrados = resultados.filter(r => r.json);
     const tbody = document.getElementById('tabelaComparacaoLoteBQ');
     tbody.innerHTML = '';
-    const encontrados = resultados.filter(r => r.json);
 
     resultados.forEach(({ os, json, erro }) => {
         const tr = document.createElement('tr');
@@ -1920,18 +1923,32 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
     });
 
     document.getElementById('lblResumoLoteBQ').innerText = `${encontrados.length} encontradas · ${resultados.length - encontrados.length} não encontradas`;
+    const btnAplicar = document.getElementById('btnAplicarLoteBQ');
+    btnAplicar.innerText = labelBotaoConfirmar;
     document.getElementById('modalComparacaoLoteBQ').classList.remove('hidden');
 
-    // 3. Ao confirmar: aplica apenas as encontradas
-    const bqParaISO = (str) => {
-        if (!str) return null;
-        const [datePart, timePart] = str.split(', ');
-        const [dia, mes, ano] = datePart.split('/');
-        return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
-    };
-
-    document.getElementById('btnAplicarLoteBQ').onclick = async () => {
+    btnAplicar.onclick = () => {
         document.getElementById('modalComparacaoLoteBQ').classList.add('hidden');
+        onConfirmar(encontrados);
+    };
+    document.getElementById('btnCancelarLoteBQ').onclick = () => {
+        document.getElementById('modalComparacaoLoteBQ').classList.add('hidden');
+    };
+}
+
+document.getElementById('btnLoteBigQuery')?.addEventListener('click', async function() {
+    const selecionadas = obterOSSelecionadasComDados();
+    if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S com prefixo e defeito definidos.');
+
+    this.disabled = true;
+    await buscarLoteBigQuery(selecionadas, '✅ Aplicar Datas', async (encontrados) => {
+        const progresso    = document.getElementById('progressoLote');
+        const lblProgresso = document.getElementById('lblProgressoLote');
+        progresso.style.display = 'block';
+        progresso.style.background = '#eff6ff';
+        progresso.style.color = '#1e40af';
+        progresso.style.borderColor = '#bfdbfe';
+
         let ok = 0;
         for (const { os, json } of encontrados) {
             try {
@@ -1946,13 +1963,12 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
                 console.warn(`Erro ao salvar O.S ${os.num}:`, e.message);
             }
         }
+
+        progresso.style.display = 'none';
         alert(`✅ ${ok} O.S atualizadas com sucesso!`);
         carregarOSAbertasNoModal();
-    };
-
-    document.getElementById('btnCancelarLoteBQ').onclick = () => {
-        document.getElementById('modalComparacaoLoteBQ').classList.add('hidden');
-    };
+    });
+    this.disabled = false;
 });
 
 document.getElementById('btnLoteValidacao')?.addEventListener('click', async function() {
@@ -1991,63 +2007,65 @@ document.getElementById('btnLoteValidacao')?.addEventListener('click', async fun
 });
 
 document.getElementById('btnLoteFechamento')?.addEventListener('click', async function() {
-    const selecionadas = obterOSSelecionadas();
+    const selecionadas = obterOSSelecionadasComDados();
     if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S.');
-    if (!confirm(`Fechar ${selecionadas.length} O.S? A IA irá gerar o texto de serviço para cada uma.`)) return;
 
-    const progresso = document.getElementById('progressoLote');
-    const lblProgresso = document.getElementById('lblProgressoLote');
-    progresso.style.display = 'block';
-    progresso.style.background = '#eff6ff';
-    progresso.style.color = '#1e40af';
-    progresso.style.borderColor = '#bfdbfe';
+    document.getElementById('modalLote').classList.add('hidden');
     this.disabled = true;
+    await buscarLoteBigQuery(selecionadas, '✅ Aplicar Datas e Fechar O.S', async (encontrados) => {
+        const bqPorId = {};
+        for (const { os, json } of encontrados) bqPorId[os.id] = json;
 
-    let ok = 0;
-    const agora = new Date().toISOString();
+        const progresso    = document.getElementById('progressoLote');
+        const lblProgresso = document.getElementById('lblProgressoLote');
+        progresso.style.display = 'block';
+        progresso.style.background = '#eff6ff';
+        progresso.style.color = '#1e40af';
+        progresso.style.borderColor = '#bfdbfe';
 
-    for (const os of selecionadas) {
-        lblProgresso.innerText = `🪄 Gerando serviço para O.S ${String(os.num).padStart(6, '0')} (${ok + 1}/${selecionadas.length})...`;
+        let ok = 0;
+        for (let i = 0; i < selecionadas.length; i++) {
+            const os = selecionadas[i];
+            const bq = bqPorId[os.id] || null;
+            lblProgresso.innerText = `🪄 Gerando serviço para O.S ${String(os.num).padStart(6, '0')} (${i + 1}/${selecionadas.length})...`;
 
-        let servicoRealizado = '';
-        try {
-            const resp = await fetch(`${API_BASE}/api/os/${os.num}/sugerir-servico`);
-            const json = await resp.json();
-            servicoRealizado = json.sugestao || '';
-        } catch (e) {
-            console.error(`IA falhou para O.S ${os.num}:`, e.message);
-        }
-
-        if (!servicoRealizado) {
+            let servicoRealizado = '';
             try {
-                const osData = await dbService.execute(
-                    client.from('Ordens_Servico').select('defeito_relatado').eq('id', os.id).maybeSingle()
-                );
-                servicoRealizado = `Serviço executado conforme defeito relatado: ${osData?.defeito_relatado || 'conforme O.S.'}.`;
+                const resp = await fetch(`${API_BASE}/api/os/${os.num}/sugerir-servico`);
+                const json = await resp.json();
+                servicoRealizado = json.sugestao || '';
             } catch (e) {
-                servicoRealizado = 'Serviço executado conforme O.S.';
+                console.error(`IA falhou para O.S ${os.num}:`, e.message);
+            }
+
+            if (!servicoRealizado) {
+                servicoRealizado = bq?.descricao_servico
+                    ? `Serviço executado conforme BigQuery: ${bq.descricao_servico.trim()}.`
+                    : `Serviço executado conforme defeito relatado: ${os.defeito || 'conforme O.S.'}.`;
+            }
+
+            const agora = new Date().toISOString();
+            try {
+                await dbService.execute(
+                    client.from('Ordens_Servico').update({
+                        status:             'FECHADA',
+                        data_abertura:      bq ? (bqParaISO(bq.data_abertura) || agora) : agora,
+                        data_fechamento:    bq ? (bqParaISO(bq.data_fechamento) || agora) : agora,
+                        usuario_fechamento: usuarioLogado.nome,
+                        servico_realizado:  servicoRealizado,
+                    }).eq('id', os.id)
+                );
+                ok++;
+            } catch (e) {
+                console.error(`Erro ao fechar O.S ${os.num}:`, e.message);
             }
         }
 
-        try {
-            await dbService.execute(
-                client.from('Ordens_Servico').update({
-                    status: 'FECHADA',
-                    data_fechamento: agora,
-                    usuario_fechamento: usuarioLogado.nome,
-                    servico_realizado: servicoRealizado
-                }).eq('id', os.id)
-            );
-            ok++;
-        } catch (e) {
-            console.error(`Erro ao fechar O.S ${os.num}:`, e.message);
-        }
-    }
-
-    progresso.style.background = '#f0fdf4';
-    progresso.style.color = '#166534';
-    progresso.style.borderColor = '#bbf7d0';
-    lblProgresso.innerText = `✅ ${ok} de ${selecionadas.length} O.S fechadas com sucesso.`;
+        progresso.style.background = '#f0fdf4';
+        progresso.style.color = '#166534';
+        progresso.style.borderColor = '#bbf7d0';
+        lblProgresso.innerText = `✅ ${ok} de ${selecionadas.length} O.S fechadas com sucesso.`;
+        carregarOSAbertasNoModal();
+    });
     this.disabled = false;
-    carregarOSAbertasNoModal();
 });
