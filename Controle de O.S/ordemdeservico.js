@@ -1614,10 +1614,13 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
         const json = await resp.json();
         if (!resp.ok) throw new Error(json.error || 'Erro desconhecido.');
 
-        const descBQ = (json.descricao_servico || '—').replace(/\n/g, ' ').trim();
-        const msg = `✅ Dados encontrados no BigQuery!\n\nO.S BigQuery: #${json.numero_os}\nStatus: ${json.status}\nAbertura: ${json.data_abertura || '—'}\nFechamento: ${json.data_fechamento || '—'}\n\nDescrição (BigQuery):\n"${descBQ}"\n\nDeseja atualizar as datas desta O.S com esses dados?`;
-
-        if (!confirm(msg)) return;
+        // Preenche e exibe o modal de resultado
+        document.getElementById('bqNumOS').innerText    = `#${json.numero_os}`;
+        document.getElementById('bqStatus').innerText   = json.status || '—';
+        document.getElementById('bqAbertura').innerText = json.data_abertura || '—';
+        document.getElementById('bqFechamento').innerText = json.data_fechamento || '—';
+        document.getElementById('bqDescricao').innerText  = (json.descricao_servico || '—').replace(/\n/g, ' ').trim();
+        document.getElementById('modalResultadoBQ').classList.remove('hidden');
 
         // Converte "DD/MM/YYYY, HH:MM:SS" → ISO para salvar no Supabase
         const bqParaISO = (str) => {
@@ -1627,15 +1630,25 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
             return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
         };
 
-        await dbService.execute(
-            client.from('Ordens_Servico').update({
-                data_abertura:   bqParaISO(json.data_abertura),
-                data_fechamento: bqParaISO(json.data_fechamento),
-            }).eq('id', window.idOSGlobal)
-        );
+        const bqAbertura  = json.data_abertura;
+        const bqFechamento = json.data_fechamento;
+        const idOS = window.idOSGlobal;
 
-        alert('✅ Datas sincronizadas com sucesso!');
-        window.location.reload();
+        document.getElementById('btnConfirmarBQ').onclick = async () => {
+            document.getElementById('modalResultadoBQ').classList.add('hidden');
+            await dbService.execute(
+                client.from('Ordens_Servico').update({
+                    data_abertura:   bqParaISO(bqAbertura),
+                    data_fechamento: bqParaISO(bqFechamento),
+                }).eq('id', idOS)
+            );
+            alert('✅ Datas sincronizadas com sucesso!');
+            window.location.reload();
+        };
+
+        document.getElementById('btnCancelarBQ').onclick = () => {
+            document.getElementById('modalResultadoBQ').classList.add('hidden');
+        };
     } catch (e) {
         alert('Erro ao sincronizar: ' + e.message);
     } finally {

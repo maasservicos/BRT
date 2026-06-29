@@ -638,6 +638,49 @@
         </div>
     </div>
 
+    <!-- MODAL: RESULTADO BIGQUERY -->
+    <div id="modalResultadoBQ" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 520px; width: 95%;">
+            <div class="modal-header" style="background: #166534;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">🔄</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px;">Dados encontrados no BigQuery</h3>
+                        <p style="margin: 0; font-size: 12px; color: #bbf7d0;">Confirme antes de aplicar</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px;">
+                        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">O.S BIGQUERY</p>
+                        <p id="bqNumOS" style="margin: 4px 0 0; font-size: 16px; font-weight: 700; color: #1e293b;">—</p>
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px;">
+                        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">STATUS</p>
+                        <p id="bqStatus" style="margin: 4px 0 0; font-size: 14px; font-weight: 700; color: #16a34a;">—</p>
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px;">
+                        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">ABERTURA</p>
+                        <p id="bqAbertura" style="margin: 4px 0 0; font-size: 13px; font-weight: 600; color: #1e293b;">—</p>
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px;">
+                        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">FECHAMENTO</p>
+                        <p id="bqFechamento" style="margin: 4px 0 0; font-size: 13px; font-weight: 600; color: #1e293b;">—</p>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; border-radius: 8px; padding: 10px;">
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">DESCRIÇÃO DO SERVIÇO (BIGQUERY)</p>
+                    <p id="bqDescricao" style="margin: 6px 0 0; font-size: 13px; color: #374151; line-height: 1.5; word-break: break-word;">—</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btnCancelarBQ" type="button" class="btn-ghost">Cancelar</button>
+                <button id="btnConfirmarBQ" type="button" class="btn-primary">✅ Aplicar Datas</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================================================================
          MODAL: AÇÕES EM LOTE
     ================================================================ -->
