@@ -1452,12 +1452,59 @@ document.getElementById('btnFiltrarOSFechadas')?.addEventListener('click', async
             });
             tbody.appendChild(tr);
         });
+        // Ativa ordenação nos cabeçalhos
+        ativarOrdenacaoFechadas();
+
     } catch (e) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ef4444;">Erro: ${e.message}</td></tr>`;
     } finally {
         this.disabled = false;
     }
 });
+
+let _sortColFechadas = null;
+let _sortAscFechadas = true;
+
+function ativarOrdenacaoFechadas() {
+    document.querySelectorAll('#modalOSFechadas .th-sortable').forEach(th => {
+        th.onclick = () => {
+            const col = th.dataset.col;
+            _sortAscFechadas = (_sortColFechadas === col) ? !_sortAscFechadas : true;
+            _sortColFechadas = col;
+
+            const tbody = document.getElementById('tabelaOSFechadas');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+
+            linhas.sort((a, b) => {
+                const cells = { numero_sequencial: 0, prefixo_veiculo: 1, data_abertura: 3, data_fechamento: 4 };
+                const idx = cells[col] ?? 0;
+                const va = a.cells[idx]?.innerText?.trim() || '';
+                const vb = b.cells[idx]?.innerText?.trim() || '';
+
+                // Datas no formato DD/MM/YYYY HH:MM
+                const toDate = s => {
+                    const m = s.match(/(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})/);
+                    return m ? new Date(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}`) : null;
+                };
+                const da = toDate(va), db = toDate(vb);
+                if (da && db) return _sortAscFechadas ? da - db : db - da;
+
+                // Numérico
+                const na = parseFloat(va.replace(/\D/g, '')), nb = parseFloat(vb.replace(/\D/g, ''));
+                if (!isNaN(na) && !isNaN(nb)) return _sortAscFechadas ? na - nb : nb - na;
+
+                // Texto
+                return _sortAscFechadas ? va.localeCompare(vb, 'pt-BR') : vb.localeCompare(va, 'pt-BR');
+            });
+
+            linhas.forEach(tr => tbody.appendChild(tr));
+
+            // Atualiza ícones
+            document.querySelectorAll('#modalOSFechadas .th-sortable .sort-icon').forEach(el => el.innerText = '↕');
+            th.querySelector('.sort-icon').innerText = _sortAscFechadas ? '↑' : '↓';
+        };
+    });
+}
 
 /* ==========================================================================
    ALTERAR DATAS DA O.S
