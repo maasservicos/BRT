@@ -1872,9 +1872,8 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
     })).filter(r => r.prefixo && r.defeito);
 
     if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S com prefixo e defeito definidos.');
-    if (!confirm(`Sincronizar datas de ${selecionadas.length} O.S com o BigQuery?\nA busca usará o defeito de cada O.S para encontrar o registro correto.`)) return;
 
-    const progresso  = document.getElementById('progressoLote');
+    const progresso    = document.getElementById('progressoLote');
     const lblProgresso = document.getElementById('lblProgressoLote');
     progresso.style.display = 'block';
     progresso.style.background = '#eff6ff';
@@ -1882,8 +1881,48 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
     progresso.style.borderColor = '#bfdbfe';
     this.disabled = true;
 
-    let ok = 0, falhou = 0;
+    // 1. Busca todos no BigQuery e monta lista de resultados
+    const resultados = [];
+    for (let i = 0; i < selecionadas.length; i++) {
+        const os = selecionadas[i];
+        lblProgresso.innerText = `🔄 Consultando BigQuery... (${i + 1}/${selecionadas.length})`;
+        try {
+            const url = `${API_BASE}/api/bigquery/os/${os.prefixo}?defeito=${encodeURIComponent(os.defeito)}`;
+            const resp = await fetch(url);
+            const json = await resp.json();
+            resultados.push({ os, json: resp.ok ? json : null, erro: resp.ok ? null : (json.error || 'Não encontrado') });
+        } catch (e) {
+            resultados.push({ os, json: null, erro: e.message });
+        }
+    }
 
+    this.disabled = false;
+    progresso.style.display = 'none';
+
+    // 2. Monta tabela de comparação
+    const tbody = document.getElementById('tabelaComparacaoLoteBQ');
+    tbody.innerHTML = '';
+    const encontrados = resultados.filter(r => r.json);
+
+    resultados.forEach(({ os, json, erro }) => {
+        const tr = document.createElement('tr');
+        const encontrou = !!json;
+        tr.style.background = encontrou ? '#f0fdf4' : '#fef2f2';
+        tr.innerHTML = `
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; font-weight: 600; white-space: nowrap;">${String(os.num).padStart(6, '0')}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${os.prefixo}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; color: #1d4ed8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${os.defeito}">${os.defeito}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; color: #166534; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${json ? (json.descricao_servico || '').replace(/\n/g,' ') : ''}">${encontrou ? (json.descricao_servico || '—').replace(/\n/g,' ').trim() : `<span style="color:#ef4444">${erro}</span>`}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${encontrou ? (json.data_abertura || '—') : '—'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${encontrou ? (json.data_fechamento || '—') : '—'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; text-align: center;">${encontrou ? `<span style="color:#166534;font-weight:600">✅ ${json.status}</span>` : `<span style="color:#ef4444;font-weight:600">❌</span>`}</td>`;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('lblResumoLoteBQ').innerText = `${encontrados.length} encontradas · ${resultados.length - encontrados.length} não encontradas`;
+    document.getElementById('modalComparacaoLoteBQ').classList.remove('hidden');
+
+    // 3. Ao confirmar: aplica apenas as encontradas
     const bqParaISO = (str) => {
         if (!str) return null;
         const [datePart, timePart] = str.split(', ');
@@ -1891,34 +1930,29 @@ document.getElementById('btnLoteBigQuery')?.addEventListener('click', async func
         return new Date(`${ano}-${mes}-${dia}T${timePart}`).toISOString();
     };
 
-    for (const os of selecionadas) {
-        lblProgresso.innerText = `🔄 Buscando O.S ${String(os.num).padStart(6, '0')} no BigQuery... (${ok + falhou + 1}/${selecionadas.length})`;
-        try {
-            const url = `${API_BASE}/api/bigquery/os/${os.prefixo}?defeito=${encodeURIComponent(os.defeito)}`;
-            const resp = await fetch(url);
-            const json = await resp.json();
-
-            if (!resp.ok) throw new Error(json.error || 'Não encontrado');
-
-            await dbService.execute(
-                client.from('Ordens_Servico').update({
-                    data_abertura:   bqParaISO(json.data_abertura),
-                    data_fechamento: bqParaISO(json.data_fechamento),
-                }).eq('id', os.id)
-            );
-            ok++;
-        } catch (e) {
-            console.warn(`O.S ${os.num}: ${e.message}`);
-            falhou++;
+    document.getElementById('btnAplicarLoteBQ').onclick = async () => {
+        document.getElementById('modalComparacaoLoteBQ').classList.add('hidden');
+        let ok = 0;
+        for (const { os, json } of encontrados) {
+            try {
+                await dbService.execute(
+                    client.from('Ordens_Servico').update({
+                        data_abertura:   bqParaISO(json.data_abertura),
+                        data_fechamento: bqParaISO(json.data_fechamento),
+                    }).eq('id', os.id)
+                );
+                ok++;
+            } catch (e) {
+                console.warn(`Erro ao salvar O.S ${os.num}:`, e.message);
+            }
         }
-    }
+        alert(`✅ ${ok} O.S atualizadas com sucesso!`);
+        carregarOSAbertasNoModal();
+    };
 
-    progresso.style.background = '#f0fdf4';
-    progresso.style.color = '#166534';
-    progresso.style.borderColor = '#bbf7d0';
-    lblProgresso.innerText = `✅ ${ok} sincronizadas com sucesso. ${falhou > 0 ? `⚠️ ${falhou} não encontradas no BigQuery.` : ''}`;
-    this.disabled = false;
-    carregarOSAbertasNoModal();
+    document.getElementById('btnCancelarLoteBQ').onclick = () => {
+        document.getElementById('modalComparacaoLoteBQ').classList.add('hidden');
+    };
 });
 
 document.getElementById('btnLoteValidacao')?.addEventListener('click', async function() {
