@@ -2019,6 +2019,7 @@ document.getElementById('btnLoteFechamento')?.addEventListener('click', async fu
     this.disabled = true;
 
     const fecharOSes = async (bqPorId) => {
+        document.getElementById('modalLote').classList.remove('hidden');
         const progresso    = document.getElementById('progressoLote');
         const lblProgresso = document.getElementById('lblProgressoLote');
         progresso.style.display = 'block';
@@ -2068,7 +2069,11 @@ document.getElementById('btnLoteFechamento')?.addEventListener('click', async fu
         progresso.style.color = '#166534';
         progresso.style.borderColor = '#bbf7d0';
         lblProgresso.innerText = `✅ ${ok} de ${todasSelecionadas.length} O.S fechadas com sucesso.`;
-        carregarOSAbertasNoModal();
+        setTimeout(() => {
+            document.getElementById('modalLote').classList.add('hidden');
+            progresso.style.display = 'none';
+            carregarOSAbertasNoModal();
+        }, 2000);
     };
 
     if (comDados.length === 0) {
