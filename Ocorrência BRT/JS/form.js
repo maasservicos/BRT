@@ -7,7 +7,7 @@ const API_BASE = 'http://localhost:3000';
 // =====================================================================
 const crachaString = localStorage.getItem('maas_usuario_logado');
 
-function verificarAcessoOcorrencia() {
+function verificarAcessoOcorrencia() {222
     if (!crachaString) {
         alert("Acesso Negado. Faça o login primeiro.");
         window.location.href = "../login.html"; 
@@ -50,6 +50,7 @@ const txtContatoOcorrencia = document.getElementById('txtContatoOcorrencia');
 const cboLocaisConstantes = document.getElementById('cboLocaisConstantes');
 const txtDescricaoLocal = document.getElementById('txtDescricaoLocal');
 const txtDefeitoRelatado = document.getElementById('txtDefeitoRelatadoOcorrencia');
+const txtNumSolicitacaoBRT = document.getElementById('txtNumSolicitacaoBRT');
 const formOcorrencia = document.querySelector('form');
 
 // Elementos do Modal
@@ -135,6 +136,7 @@ function configurarEventosOcorrencia() {
                 cboLocaisConstantes.value = data.locais_constantes || '';
                 txtDescricaoLocal.value = data.descricao_local || '';
                 txtDefeitoRelatado.value = data.defeito_relatado || '';
+                txtNumSolicitacaoBRT.value = data.num_solicitacao_brt || '';
                 
                 if(data.data_abertura) {
                     const dataObj = new Date(data.data_abertura);
@@ -198,10 +200,10 @@ function configurarEventosOcorrencia() {
             locais_constantes: cboLocaisConstantes.value,
             descricao_local: txtDescricaoLocal.value,
             defeito_relatado: txtDefeitoRelatado.value,
-            data_abertura: new Date().toISOString(), // Grava a data/hora exata do clique
+            num_solicitacao_brt: txtNumSolicitacaoBRT.value || null,
+            data_abertura: new Date().toISOString(),
             status: 'Pendente',
-            usuario_abertura: usuarioLogado.nome // 🚀 NOVO: Usuário Abertura Ocorrência
-            
+            usuario_abertura: usuarioLogado.nome
         };
 
         try {
@@ -373,6 +375,7 @@ function limparTela() {
     cboLocaisConstantes.value = '';
     txtDescricaoLocal.value = '';
     txtDefeitoRelatado.value = '';
+    txtNumSolicitacaoBRT.value = '';
     preencherDataAbertura();
 }
 
@@ -437,6 +440,9 @@ function configurarImportacaoSS() {
             }
             if (dados.defeito) {
                 txtDefeitoRelatado.value = dados.defeito;
+            }
+            if (dados.num_solicitacao) {
+                txtNumSolicitacaoBRT.value = dados.num_solicitacao;
             }
 
             // Locais Constantes fixo para Garagem BRT

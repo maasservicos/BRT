@@ -54,6 +54,10 @@ app.post('/api/extrair-documento', async (req, res) => {
       const pdfData = await parser.getText();
       const texto = pdfData.text;
 
+      // N da Solicitação: "VISTORIA: 123383331" → "123383331"
+      const matchVistoria = texto.match(/VISTORIA:\s*(\d+)/i);
+      const num_solicitacao = matchVistoria ? matchVistoria[1].trim() : '';
+
       // Prefixo: "CARRO: 1:1231" → "1231"
       const matchCarro = texto.match(/CARRO:\s*\d+:(\d+)/i);
       const prefixo = matchCarro ? matchCarro[1].trim() : '';
@@ -83,7 +87,7 @@ app.post('/api/extrair-documento', async (req, res) => {
       }
       const defeito = sintomas.join('; ');
 
-      return res.json({ prefixo, km, defeito });
+      return res.json({ prefixo, km, defeito, num_solicitacao });
 
     } else {
       // --- Imagem: Gemini Vision ---
