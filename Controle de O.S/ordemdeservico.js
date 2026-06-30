@@ -2007,15 +2007,16 @@ document.getElementById('btnLoteValidacao')?.addEventListener('click', async fun
 });
 
 document.getElementById('btnLoteFechamento')?.addEventListener('click', async function() {
-    const selecionadas = obterOSSelecionadasComDados();
-    if (selecionadas.length === 0) return alert('Selecione ao menos uma O.S.');
+    const todasSelecionadas = obterOSSelecionadas();
+    if (todasSelecionadas.length === 0) return alert('Selecione ao menos uma O.S.');
+
+    // Apenas as que têm prefixo+defeito vão ao BigQuery
+    const comDados = obterOSSelecionadasComDados();
 
     document.getElementById('modalLote').classList.add('hidden');
     this.disabled = true;
-    await buscarLoteBigQuery(selecionadas, '✅ Aplicar Datas e Fechar O.S', async (encontrados) => {
-        const bqPorId = {};
-        for (const { os, json } of encontrados) bqPorId[os.id] = json;
 
+    const fecharOSes = async (bqPorId) => {
         const progresso    = document.getElementById('progressoLote');
         const lblProgresso = document.getElementById('lblProgressoLote');
         progresso.style.display = 'block';
@@ -2024,10 +2025,10 @@ document.getElementById('btnLoteFechamento')?.addEventListener('click', async fu
         progresso.style.borderColor = '#bfdbfe';
 
         let ok = 0;
-        for (let i = 0; i < selecionadas.length; i++) {
-            const os = selecionadas[i];
+        for (let i = 0; i < todasSelecionadas.length; i++) {
+            const os = todasSelecionadas[i];
             const bq = bqPorId[os.id] || null;
-            lblProgresso.innerText = `🪄 Gerando serviço para O.S ${String(os.num).padStart(6, '0')} (${i + 1}/${selecionadas.length})...`;
+            lblProgresso.innerText = `🪄 Gerando serviço para O.S ${String(os.num).padStart(6, '0')} (${i + 1}/${todasSelecionadas.length})...`;
 
             let servicoRealizado = '';
             try {
@@ -2064,8 +2065,22 @@ document.getElementById('btnLoteFechamento')?.addEventListener('click', async fu
         progresso.style.background = '#f0fdf4';
         progresso.style.color = '#166534';
         progresso.style.borderColor = '#bbf7d0';
-        lblProgresso.innerText = `✅ ${ok} de ${selecionadas.length} O.S fechadas com sucesso.`;
+        lblProgresso.innerText = `✅ ${ok} de ${todasSelecionadas.length} O.S fechadas com sucesso.`;
         carregarOSAbertasNoModal();
-    });
+    };
+
+    if (comDados.length === 0) {
+        if (!confirm(`Fechar ${todasSelecionadas.length} O.S sem sincronizar com BigQuery?`)) {
+            this.disabled = false;
+            return;
+        }
+        await fecharOSes({});
+    } else {
+        await buscarLoteBigQuery(comDados, '✅ Aplicar Datas e Fechar O.S', async (encontrados) => {
+            const bqPorId = {};
+            for (const { os, json } of encontrados) bqPorId[os.id] = json;
+            await fecharOSes(bqPorId);
+        });
+    }
     this.disabled = false;
 });
