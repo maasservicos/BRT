@@ -2,9 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+import { PDFParse } from 'pdf-parse';
 import { BigQuery } from '@google-cloud/bigquery';
 import 'dotenv/config';
 
@@ -54,7 +52,8 @@ app.post('/api/extrair-documento', async (req, res) => {
 
     if (mimeType === 'application/pdf') {
       // --- PDF: extração local com regex, sem consumir API ---
-      const pdfData = await pdfParse(buffer);
+      const parser = new PDFParse({ data: buffer });
+      const pdfData = await parser.getText();
       const texto = pdfData.text;
 
       // N da Solicitação: "VISTORIA: 123383331" → "123383331"
