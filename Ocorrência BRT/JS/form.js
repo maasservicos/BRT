@@ -404,7 +404,6 @@ function configurarImportacaoSS() {
 
     inputArquivo.addEventListener('change', async () => {
         const arquivo = inputArquivo.files[0];
-        console.log('[DEBUG] arquivo selecionado:', arquivo?.name, arquivo?.type);
         if (!arquivo) return;
 
         lblStatus.style.color = '#6b7280';
@@ -427,7 +426,6 @@ function configurarImportacaoSS() {
             }
 
             const dados = await resposta.json();
-            console.log('[DEBUG PDF]', dados);
 
             // Gera o número da ocorrência automaticamente
             await gerarProximoNumeroOcorrencia();
