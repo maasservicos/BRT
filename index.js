@@ -59,7 +59,7 @@ app.post('/api/extrair-documento', async (req, res) => {
 
       // N da Solicitação: "VISTORIA: 123383331" → "123383331"
       const matchVistoria = texto.match(/VISTORIA:\s*(\d+)/i);
-      const num_solicitacao = matchVistoria ? matchVistoria[1].trim() : '';
+      const num_solicitacao_brt = matchVistoria ? matchVistoria[1].trim() : '';
 
       // Prefixo: "CARRO: 1:1231" → "1231"
       const matchCarro = texto.match(/CARRO:\s*\d+:(\d+)/i);
@@ -89,8 +89,8 @@ app.post('/api/extrair-documento', async (req, res) => {
         }
       }
       const defeito = sintomas.join('; ');
-
-      return res.json({ prefixo, km, defeito, num_solicitacao, _debug_texto: texto.slice(0, 400) });
+    
+      return res.json({ prefixo, km, defeito, num_solicitacao_brt, _debug_texto: texto.slice(0, 400) });
 
     } else {
       // --- Imagem: Gemini Vision ---
@@ -117,7 +117,8 @@ Retorne APENAS JSON válido sem markdown. Exemplo: {"prefixo":"1231","km":"14941
       return res.json({
         prefixo: dados.prefixo || '',
         km: dados.km || '',
-        defeito: dados.defeito || ''
+        defeito: dados.defeito || '',
+        num_solicitacao_brt: dados.num_solicitacao_brt || ''
       });
     }
 
