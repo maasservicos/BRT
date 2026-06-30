@@ -1858,8 +1858,10 @@ async function carregarOSAbertasNoModal() {
 
 function obterOSSelecionadas() {
     return Array.from(document.querySelectorAll('.chk-os-lote:checked')).map(chk => ({
-        id: chk.dataset.id,
-        num: parseInt(chk.dataset.num)
+        id:      chk.dataset.id,
+        num:     parseInt(chk.dataset.num),
+        prefixo: chk.dataset.prefixo || '',
+        defeito: chk.dataset.defeito || '',
     }));
 }
 
