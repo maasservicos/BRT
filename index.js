@@ -33,6 +33,8 @@ const bigquery = new BigQuery({
   location: 'us-east1',
 });
 
+app.get('/api/version', (req, res) => res.json({ commit: '73ebaf9', feature: 'vistoria-extraction' }));
+
 /**
  * ROTA: POST /api/extrair-documento
  * PDF  → extrai texto com pdf-parse + regex (gratuito, sem limite)
