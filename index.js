@@ -87,7 +87,7 @@ app.post('/api/extrair-documento', async (req, res) => {
       }
       const defeito = sintomas.join('; ');
 
-      return res.json({ prefixo, km, defeito, num_solicitacao });
+      return res.json({ prefixo, km, defeito, num_solicitacao, _debug_texto: texto.slice(0, 400) });
 
     } else {
       // --- Imagem: Gemini Vision ---
