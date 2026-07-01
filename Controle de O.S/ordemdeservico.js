@@ -1723,26 +1723,19 @@ document.getElementById('btnSincronizarBQ')?.addEventListener('click', async fun
 
 // Sync em lote: todas as O.S visíveis no modal de fechadas
 document.getElementById('btnSincronizarLoteBQ')?.addEventListener('click', async function() {
-    const linhas = document.querySelectorAll('#tabelaOSFechadas tr[data-id]');
-
-    // Coleta dados das linhas renderizadas
-    const registros = Array.from(document.querySelectorAll('#tabelaOSFechadas .btn-editar-datas')).map(btn => ({
-        id_supabase: btn.dataset.id,
-        prefixo: btn.closest('tr')?.querySelector('td:nth-child(2)')?.innerText?.trim() || '',
-    })).filter(r => r.prefixo && r.prefixo !== '—');
-
-    // Alternativa: coleta via atributos data já presentes nos botões de datas
+    // Coleta via atributos data já presentes nos botões de datas (inclui defeito para desambiguar O.S do mesmo veículo)
     const registrosValidos = Array.from(document.querySelectorAll('#tabelaOSFechadas .btn-abrir-os')).map((btn, i) => {
         const btnDatas = btn.closest('td')?.querySelector('.btn-editar-datas');
         const prefixoCell = btn.closest('tr')?.cells[1]?.innerText?.trim();
         return {
             id_supabase: btnDatas?.dataset.id,
             prefixo: prefixoCell,
+            defeito: btnDatas?.dataset.defeito || '',
         };
     }).filter(r => r.id_supabase && r.prefixo && r.prefixo !== '—');
 
     if (registrosValidos.length === 0) return alert('Filtre as O.S antes de sincronizar.');
-    if (!confirm(`Sincronizar ${registrosValidos.length} O.S com o BigQuery?\nDatas de abertura, fechamento e defeito serão atualizados.`)) return;
+    if (!confirm(`Sincronizar ${registrosValidos.length} O.S com o BigQuery?\nDatas de abertura e fechamento serão atualizadas.`)) return;
 
     const progresso = document.getElementById('progressoLote') || null;
     this.disabled = true;

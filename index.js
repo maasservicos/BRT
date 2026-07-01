@@ -414,8 +414,11 @@ app.get('/api/bigquery/os/:prefixo', async (req, res) => {
 
 /**
  * ROTA: POST /api/bigquery/sincronizar-lote
- * Recebe [{id_supabase, prefixo}], faz uma única query BigQuery com UNNEST,
- * e atualiza data_abertura, data_fechamento e defeito_relatado no Supabase.
+ * Recebe [{id_supabase, prefixo, defeito}], faz uma única query BigQuery com UNNEST,
+ * e atualiza data_abertura e data_fechamento no Supabase (defeito_relatado não é alterado).
+ * Quando um veículo (prefixo) tem mais de uma O.S no BigQuery, usa o defeito
+ * relatado para achar a O.S correspondente (mesma lógica da rota individual),
+ * em vez de assumir sempre a mais recente.
  */
 app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
   const { registros } = req.body;
@@ -441,7 +444,7 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
     JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
     WHERE v.PREFIXO IN UNNEST(@prefixos)
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.PREFIXO ORDER BY os.CREATED_AT DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.PREFIXO ORDER BY os.CREATED_AT DESC) <= 50
   `;
 
   try {
@@ -452,23 +455,54 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
       location: 'us-east1',
     });
 
-    // Indexa resultados do BigQuery por prefixo para lookup O(1)
-    const bqMap = {};
+    // Agrupa candidatos do BigQuery por prefixo (cada veículo pode ter várias O.S)
+    const bqPorPrefixo = {};
     for (const r of rows) {
-      bqMap[String(r.PREFIXO)] = {
+      const chave = String(r.PREFIXO);
+      if (!bqPorPrefixo[chave]) bqPorPrefixo[chave] = [];
+      bqPorPrefixo[chave].push({
         data_abertura:    r.CREATED_AT?.value ?? r.CREATED_AT ?? null,
         data_fechamento:  r.UPDATED_AT?.value  ?? r.UPDATED_AT  ?? null,
         descricao_servico: r.DESCRICAO_SERVICO ?? '',
-      };
+      });
     }
+
+    // Escolhe, entre os candidatos do veículo, o que corresponde ao defeito relatado.
+    // Nunca assume a mais recente: sem defeito para comparar, não há como confirmar a O.S certa.
+    const escolherMelhorCandidato = (candidatos, defeito) => {
+      const exato = candidatos.find(c =>
+        c.descricao_servico.trim().toUpperCase() === defeito.trim().toUpperCase()
+      );
+      if (exato) return exato;
+
+      let melhor = null, maxScore = 0;
+      for (const c of candidatos) {
+        const score = similaridade(defeito, c.descricao_servico);
+        if (score > maxScore) { maxScore = score; melhor = c; }
+      }
+      return maxScore >= 0.3 ? melhor : null;
+    };
 
     const resultados = [];
     for (const reg of registros) {
       const prefixo = parseInt(reg.prefixo, 10);
-      const bq = bqMap[String(prefixo)];
+      const candidatos = bqPorPrefixo[String(prefixo)] || [];
+
+      if (candidatos.length === 0) {
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: 'Não encontrado no BigQuery' });
+        continue;
+      }
+
+      const defeito = reg.defeito?.trim() || '';
+      if (!defeito) {
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: 'Defeito relatado não informado — não é possível identificar a O.S correspondente.' });
+        continue;
+      }
+
+      const bq = escolherMelhorCandidato(candidatos, defeito);
 
       if (!bq) {
-        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: 'Não encontrado no BigQuery' });
+        resultados.push({ id: reg.id_supabase, prefixo, sucesso: false, erro: 'Não foi possível encontrar a O.S. correspondente ao defeito informado.' });
         continue;
       }
 
@@ -477,7 +511,6 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
         .update({
           data_abertura:    bq.data_abertura,
           data_fechamento:  bq.data_fechamento,
-          defeito_relatado: bq.descricao_servico,
         })
         .eq('id', reg.id_supabase);
 
@@ -492,6 +525,72 @@ app.post('/api/bigquery/sincronizar-lote', async (req, res) => {
   } catch (err) {
     console.error('Erro BigQuery (lote):', err);
     return res.status(500).json({ error: 'Erro ao consultar o BigQuery.' });
+  }
+});
+
+/**
+ * ROTA TEMPORÁRIA DE DIAGNÓSTICO — REMOVER APÓS O USO.
+ * GET /api/bigquery/diagnostico-corrupcao-defeito
+ * Não altera nada. Cruza defeito_relatado das O.S fechadas com as
+ * DESCRICAO_SERVICO do BigQuery para achar quais foram sobrescritas
+ * pelo bug antigo da sincronização em lote (que ignorava o defeito).
+ */
+app.get('/api/bigquery/diagnostico-corrupcao-defeito', async (req, res) => {
+  try {
+    const { data: ordens, error: errOS } = await supabase
+      .from('Ordens_Servico')
+      .select('id, numero_sequencial, numero_ss, prefixo_veiculo, defeito_relatado, data_fechamento')
+      .eq('status', 'FECHADA')
+      .not('prefixo_veiculo', 'is', null);
+
+    if (errOS) throw errOS;
+
+    const prefixos = [...new Set(ordens.map(o => parseInt(o.prefixo_veiculo, 10)).filter(p => !isNaN(p)))];
+
+    const query = `
+      SELECT v.PREFIXO, os.DESCRICAO_SERVICO
+      FROM \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_VEICULO\`       v
+      JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_SOLICITACOES\` s ON s.VEICULO_ID = v.UUID
+      JOIN \`gcp-maas-proj-manutencao.silver.SILVER_SIAN_SUPABASE_OS\`           os ON os.SOLICITACAO_ID = s.UUID
+      WHERE v.PREFIXO IN UNNEST(@prefixos)
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY v.PREFIXO ORDER BY os.CREATED_AT DESC) <= 50
+    `;
+
+    const [rows] = await bigquery.query({
+      query,
+      params: { prefixos },
+      types: { prefixos: ['INT64'] },
+      location: 'us-east1',
+    });
+
+    const bqPorPrefixo = {};
+    for (const r of rows) {
+      const chave = String(r.PREFIXO);
+      if (!bqPorPrefixo[chave]) bqPorPrefixo[chave] = new Set();
+      if (r.DESCRICAO_SERVICO) bqPorPrefixo[chave].add(r.DESCRICAO_SERVICO.trim().toUpperCase());
+    }
+
+    const corrompidas = ordens.filter(os => {
+      const candidatos = bqPorPrefixo[String(parseInt(os.prefixo_veiculo, 10))];
+      const atual = (os.defeito_relatado || '').trim().toUpperCase();
+      return candidatos && atual && candidatos.has(atual);
+    });
+
+    return res.json({
+      total_os_fechadas: ordens.length,
+      total_corrompidas: corrompidas.length,
+      corrompidas: corrompidas.map(os => ({
+        id: os.id,
+        numero_os: os.numero_sequencial,
+        numero_ss: os.numero_ss,
+        prefixo: os.prefixo_veiculo,
+        defeito_atual: os.defeito_relatado,
+        data_fechamento: os.data_fechamento,
+      })),
+    });
+  } catch (err) {
+    console.error('Erro no diagnóstico:', err);
+    return res.status(500).json({ error: err.message });
   }
 });
 
